@@ -5,6 +5,8 @@ VisualStudioVersion = 17.4.33213.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StringFunctions", "StringFunctions\StringFunctions.csproj", "{1130C52B-C393-4AD1-81D7-84A10E8E5C54}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StringFunctionsTests", "StringFunctionsTests\StringFunctionsTests.csproj", "{52EDA249-9327-4529-934C-EE22970331CA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{1130C52B-C393-4AD1-81D7-84A10E8E5C54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1130C52B-C393-4AD1-81D7-84A10E8E5C54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1130C52B-C393-4AD1-81D7-84A10E8E5C54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{52EDA249-9327-4529-934C-EE22970331CA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52EDA249-9327-4529-934C-EE22970331CA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52EDA249-9327-4529-934C-EE22970331CA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52EDA249-9327-4529-934C-EE22970331CA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

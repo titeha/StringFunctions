@@ -1,13 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>disable</Nullable>
-    <BaseOutputPath>..\StringFunctions\bin\</BaseOutputPath>
+    <BaseOutputPath>..\bin\StringFunctions</BaseOutputPath>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Version>1.0.0</Version>
     <Copyright>Artemy Sobolev</Copyright>
+    <RepositoryUrl>https://github.com/titeha/StringFunctions</RepositoryUrl>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName)Tests"/>
+  </ItemGroup>  
 </Project>
