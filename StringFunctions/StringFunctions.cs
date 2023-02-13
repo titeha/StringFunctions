@@ -1,5 +1,6 @@
-﻿using StringFunctions.Braces;
-using CommonClasses;
+﻿using CommonClasses;
+
+using StringFunctions.Braces;
 
 namespace StringFunctions;
 
@@ -11,7 +12,7 @@ public class StringFunctions
   /// </summary>
   /// <param name="source">Проверяемая строка</param>
   /// <returns>Возвращаемый кортеж, булево значение - признак сбалансированности скобок, символ - несбалансированный символ (символ с кодом 0, если всё ок)</returns>
-  public (bool, char) IsBracesBalanced(string source, KnownBracesTypes bracesTypes = KnownBracesTypes.Other, params (char, char)[] bracesSymbols)
+  public static (bool, char) IsBracesBalanced(string source, KnownBracesTypes bracesTypes = KnownBracesTypes.Other, params (char, char)[] bracesSymbols)
   {
     if (source.IsNullOrEmpty())
       return (true, '\x0');
@@ -36,7 +37,7 @@ public class StringFunctions
   {
     const char _zeroCodeSym = '\x0';
     char[] _bracesList = manager.BracesList;
-    Stack<char> _result = new Stack<char>();
+    Stack<char> _result = new();
     char _returnSymbol = _zeroCodeSym;
     bool _isBalanced;
 
