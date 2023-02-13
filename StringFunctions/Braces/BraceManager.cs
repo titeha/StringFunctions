@@ -1,4 +1,6 @@
-﻿namespace StringFunctions.Braces;
+﻿using static StringFunctions.Braces.KnownBracesTypes;
+
+namespace StringFunctions.Braces;
 
 internal class BraceManager
 {
@@ -7,30 +9,17 @@ internal class BraceManager
   #endregion
 
   #region Поля
-  private static readonly Dictionary<KnownBracesTypes, (char, char)> _knownBracesValues = new()
-  {
-    [RoundedBraces] = ('(', ')'),
-    [SquareBraces] = ('[', ']'),
-    [FigureBraces] = ('{', '}'),
-    [CornerBraces] = ('<', '>'),
-    [Quotas] = ('"', '"'),
-    [Apostrofe] = ('\'', '\''),
-    [CornerQuotas] = ('«', '»'),
-    [HandWritesQuotas] = ('“', '”'),
-    [Tilda] = ('~', '~')
-  };
+  private readonly static Brace _roundBrace = new(('(', ')'));
+  private readonly static Brace _squareBrace = new(('[', ']'));
+  private readonly static Brace _figureBrace = new(('{', '}'));
+  private readonly static Brace _cornerBrace = new(('<', '>'));
+  private readonly static Brace _quotas = new(('"', '"'));
+  private readonly static Brace _apostrofe = new(('\'', '\''));
+  private readonly static Brace _cornerQuotas = new(('«', '»'));
+  private readonly static Brace _handWriteQuotas = new(('“', '”'));
+  private readonly static Brace _tilda = new(('~', '~'));
 
-  private readonly static Brace _roundBrace = new Brace(_knownBracesValues[RoundedBraces]);
-  private readonly static Brace _squareBrace = new Brace(_knownBracesValues[SquareBraces]);
-  private readonly static Brace _figureBrace = new Brace(_knownBracesValues[FigureBraces]);
-  private readonly static Brace _cornerBrace = new Brace(_knownBracesValues[CornerBraces]);
-  private readonly static Brace _quotas = new Brace(_knownBracesValues[Quotas]);
-  private readonly static Brace _apostrofe = new Brace(_knownBracesValues[Apostrofe]);
-  private readonly static Brace _cornerQuotas = new Brace(_knownBracesValues[CornerQuotas]);
-  private readonly static Brace _handWriteQuotas = new Brace(_knownBracesValues[HandWritesQuotas]);
-  private readonly static Brace _tilda = new Brace(_knownBracesValues[Tilda]);
-
-  private readonly List<Brace> _bracesList = new List<Brace>();
+  private readonly List<Brace> _bracesList = new();
   #endregion
 
   #region Свойство
@@ -103,6 +92,6 @@ internal class BraceManager
 
   public bool IsPaired(char candidate) => _bracesList.Single(v => v.HasThisBrace(candidate)).IsPaired;
 
-  private void ThrowArgumentException() => throw new ArgumentException(_noBracesTypesPresent);
+  private static void ThrowArgumentException() => throw new ArgumentException(_noBracesTypesPresent);
   #endregion
 }
