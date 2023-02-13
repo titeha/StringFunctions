@@ -20,6 +20,8 @@ internal readonly struct Brace : IEnumerable<char>, IEquatable<Brace>
     _closingBrace = closing;
   }
 
+  public Brace(char symbol) : this(symbol, symbol) { }
+
   internal Brace((char, char) braces) : this(braces.Item1, braces.Item2) { }
   #endregion
 
