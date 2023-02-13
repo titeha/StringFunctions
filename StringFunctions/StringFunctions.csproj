@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="$(AssemblyName)Tests"/>
+    <InternalsVisibleTo Include="$(AssemblyName)Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommonClasses" Version="1.0.1" />
   </ItemGroup>  
 </Project>
