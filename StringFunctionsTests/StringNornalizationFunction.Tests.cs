@@ -11,7 +11,7 @@ public class StringNornalizationFunctionTests
 
     string _actualString = _sourceString.NormalizeString();
 
-    Assert.Equal(_actualString, _expectedString);
+    Assert.Equal(_expectedString, _actualString);
   }
 
   [Fact]
