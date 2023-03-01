@@ -4,7 +4,7 @@ using StringFunctions.Braces;
 
 namespace StringFunctions;
 
-public class StringFunctions
+public static class StringFunctions
 {
   #region Методы
   /// <summary>
@@ -12,7 +12,7 @@ public class StringFunctions
   /// </summary>
   /// <param name="source">Проверяемая строка</param>
   /// <returns>Возвращаемый кортеж, булево значение - признак сбалансированности скобок, символ - несбалансированный символ (символ с кодом 0, если всё ок)</returns>
-  public static (bool, char) IsBracesBalanced(string source, KnownBracesTypes bracesTypes = KnownBracesTypes.Other, params (char, char)[] bracesSymbols)
+  public static (bool, char) IsBracesBalanced(this string source, KnownBracesTypes bracesTypes = KnownBracesTypes.Other, params (char, char)[] bracesSymbols)
   {
     if (source.IsNullOrEmpty())
       return (true, '\x0');
