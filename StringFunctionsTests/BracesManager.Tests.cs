@@ -1,12 +1,26 @@
-﻿using System.Runtime.InteropServices;
-
-namespace StringFunctions.Braces.Tests;
+﻿namespace StringFunctions.Braces.Tests;
 
 public class BracesManagerTests
 {
-  private readonly char[] _expectedCommonBracesList = new char[] { '(', ')', '[', ']', '{', '}' };
+  private readonly char[] _expectedCommonBracesList = ['(', ')', '[', ']', '{', '}'];
 
-  private BraceManager _testBraceManager;
+  private BraceManager _testBraceManager = null!;
+
+  public static TheoryData<char> ClosingBraces => [')', ']', '}'];
+
+  public static TheoryData<char, char> MatchingOpeningAndClosingBracePairs => new()
+  {
+    { ')', '(' },
+    { ']', '[' },
+    { '}', '{' },
+  };
+
+  public static TheoryData<char, char> MismatchedOpeningAndClosingBracePairs => new()
+  {
+    { ')', '[' },
+    { ')', '{' },
+    { ']', '{' },
+  };
 
   [Fact]
   public void Craete_brace_manager_without_parameters_Exception_throws() => Assert.Throws<ArgumentException>(() => new BraceManager());
@@ -56,9 +70,7 @@ public class BracesManagerTests
   }
 
   [Theory]
-  [InlineData(')')]
-  [InlineData(']')]
-  [InlineData('}')]
+  [MemberData(nameof(ClosingBraces))]
   public void Check_is_opening_brace_on_common_braces_set_with_closing_brace_Returns_false(char brace)
   {
     _testBraceManager = new(KnownBracesTypes.CommonBraces);
@@ -67,10 +79,8 @@ public class BracesManagerTests
   }
 
   [Theory]
-  [InlineData(')', '(')]
-  [InlineData(']', '[')]
-  [InlineData('}', '{')]
-  public void Check_is_pair_on_common_braces_set_with_paired_braces_Returns_true(char first, char second)
+  [MemberData(nameof(MatchingOpeningAndClosingBracePairs))]
+  public void Check_is_pair_on_common_braces_set_with_opening_and_closing_brace_Returns_true(char first, char second)
   {
     _testBraceManager = new(KnownBracesTypes.CommonBraces);
 
@@ -78,10 +88,8 @@ public class BracesManagerTests
   }
 
   [Theory]
-  [InlineData(')', '[')]
-  [InlineData(')', '{')]
-  [InlineData(']', '{')]
-  public void Check_is_pair_on_common_braces_set_with_unpaired_braces_Returns_false(char first, char second)
+  [MemberData(nameof(MismatchedOpeningAndClosingBracePairs))]
+  public void Check_is_pair_on_common_braces_set_with_mismatched_opening_and_closing_brace_Returns_false(char first, char second)
   {
     _testBraceManager = new(KnownBracesTypes.CommonBraces);
 

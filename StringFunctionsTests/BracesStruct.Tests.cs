@@ -1,6 +1,4 @@
-﻿using NuGet.Frameworks;
-
-namespace StringFunctions.Braces.Tests;
+﻿namespace StringFunctions.Braces.Tests;
 
 public class BracesStructTests
 {

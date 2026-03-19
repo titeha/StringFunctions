@@ -313,17 +313,11 @@ public static class IntRangeParser
     if (source.IndexOf('-') < 0)
       return source;
 
-    bool hasWhitespace = false;
     bool needsRewrite = false;
 
     for (int i = 0; i < source.Length; i++)
     {
-      char c = source[i];
-
-      if (char.IsWhiteSpace(c))
-        hasWhitespace = true;
-
-      if (c == '-' &&
+      if (source[i] == '-' &&
           (i > 0 && char.IsWhiteSpace(source[i - 1]) ||
            i + 1 < source.Length && char.IsWhiteSpace(source[i + 1])))
       {
@@ -332,7 +326,7 @@ public static class IntRangeParser
       }
     }
 
-    if (!hasWhitespace || !needsRewrite)
+    if (!needsRewrite)
       return source;
 
     var result = new System.Text.StringBuilder(source.Length);
@@ -357,14 +351,14 @@ public static class IntRangeParser
 
       bool nextNonWhitespaceIsDash = next < source.Length && source[next] == '-';
 
-      // Remove whitespace adjacent to '-'.
+      // Удаляем пробелы, если они примыкают к '-'
       if (previousNonWhitespaceWasDash || nextNonWhitespaceIsDash)
       {
         index = next;
         continue;
       }
 
-      // Otherwise keep a single separator-space.
+      // Иначе оставляем один пробел как обычный разделитель токенов
       result.Append(' ');
       previousNonWhitespaceWasDash = false;
       index = next;

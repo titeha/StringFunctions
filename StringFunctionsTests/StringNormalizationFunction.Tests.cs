@@ -1,6 +1,6 @@
 ﻿namespace StringFunctions.Tests;
 
-public class StringNornalizationFunctionTests
+public class StringNormalizationFunctionTests
 {
   private const string _expectedString = "String for normalization";
 
@@ -41,7 +41,7 @@ public class StringNornalizationFunctionTests
 
     string _actualString = _sourceString.NormalizeString();
 
-    Assert.Equal(_actualString, _expectedString + '.' + ',' + ':' + ';' + '!' + '?');
+    Assert.Equal($"{_expectedString}.,:;!?", _actualString);
   }
 
   [Fact]
@@ -51,12 +51,12 @@ public class StringNornalizationFunctionTests
 
     string _actualString = _sourceString.NormalizeString();
 
-    Assert.Equal(_actualString, _expectedString);
+    Assert.Equal(_expectedString, _actualString);
   }
 
   [Fact]
   public void Doesn_need_normalize_String_no_changes()
   {
-    Assert.Equal(_expectedString.NormalizeString(), _expectedString);
+    Assert.Equal(_expectedString, _expectedString.NormalizeString());
   }
 }
