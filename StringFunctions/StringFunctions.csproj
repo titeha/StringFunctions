@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFrameworks>net6.0;net7.0;net8.0;net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
     <BaseOutputPath>..\bin\StringFunctions</BaseOutputPath>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Version>1.0.0</Version>
     <Copyright>Artemy Sobolev</Copyright>
     <RepositoryUrl>https://github.com/titeha/StringFunctions</RepositoryUrl>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <TieredPGO>true</TieredPGO>
+    <EnableSIMD>true</EnableSIMD>
+
   </PropertyGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName)Tests" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="CommonClasses" Version="1.0.1" />
-  </ItemGroup>  
 </Project>

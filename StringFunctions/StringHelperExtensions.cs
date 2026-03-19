@@ -51,4 +51,8 @@ public static class StringHelperExtensions
   }
 
   public static bool IsDelimiter(this string delimiters, char source) => delimiters.IndexOf(source) >= 0;
+
+  public static bool IsNullOrEmpty(this string? source) => string.IsNullOrEmpty(source);
+
+  public static bool IsNullOrWhiteSpace(this string? source) => string.IsNullOrWhiteSpace(source);
 }
