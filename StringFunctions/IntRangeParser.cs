@@ -9,18 +9,26 @@ using ResultType;
 namespace StringFunctions;
 
 /// <summary>
-/// Parses a string containing integer values and ranges into a sorted list of unique integers.
-/// Supports tokens of the forms <c>N</c>, <c>N-M</c>, <c>-N</c>, <c>N-</c>.
+/// Предоставляет методы для разбора строкового представления целых чисел и диапазонов целых чисел.
 /// </summary>
 /// <remarks>
-/// Contract:
+/// Поддерживаются следующие формы записи:
 /// <list type="bullet">
-/// <item><description><c>-N</c> means the open-left range <c>1..N</c>.</description></item>
-/// <item><description>Explicit <c>0</c> is allowed: <c>0</c>, <c>0-N</c>, <c>0-</c>.</description></item>
-/// <item><description>Explicit negative values are invalid.</description></item>
-/// <item><description>Whitespace around <c>-</c> inside a range is ignored.</description></item>
-/// <item><description>The result is always sorted ascending and contains no duplicates.</description></item>
+/// <item><description><c>N</c> — одиночное значение.</description></item>
+/// <item><description><c>N-M</c> — диапазон значений от <c>N</c> до <c>M</c> включительно.</description></item>
+/// <item><description><c>-N</c> — открытый слева диапазон, интерпретируемый как <c>1..N</c>.</description></item>
+/// <item><description><c>N-</c> — открытый справа диапазон, интерпретируемый как <c>N..maxRangeValue</c>.</description></item>
 /// </list>
+/// <para>
+/// Явно заданный <c>0</c> допускается, например <c>0</c>, <c>0-N</c> и <c>0-</c>.
+/// </para>
+/// <para>
+/// Ошибки пользовательского ввода возвращаются через <c>Result&lt;List&lt;int&gt;&gt;</c>,
+/// без генерации исключений для некорректного формата входной строки.
+/// </para>
+/// <para>
+/// Результат разбора всегда содержит уникальные значения, отсортированные по возрастанию.
+/// </para>
 /// </remarks>
 public static class IntRangeParser
 {
@@ -61,14 +69,40 @@ public static class IntRangeParser
   }
 
   /// <summary>
-  /// Parses a string containing integer values and ranges into a sorted list of unique integers.
+  /// Разбирает строку с числами и диапазонами целых чисел и возвращает
+  /// отсортированный список уникальных значений.
   /// </summary>
-  /// <param name="rangeSource">Source string with values and ranges.</param>
-  /// <param name="maxRangeValue">Maximum allowed explicit value or upper bound.</param>
+  /// <param name="rangeSource">
+  /// Исходная строка с токенами диапазонов. Поддерживаются формы:
+  /// <c>N</c>, <c>N-M</c>, <c>-N</c>, <c>N-</c>.
+  /// </param>
+  /// <param name="maxRangeValue">
+  /// Максимально допустимое значение правой границы. Должно быть не меньше <c>0</c>.
+  /// </param>
   /// <returns>
-  /// <see cref="Result{T, E}"/> with a sorted list of unique integers on success,
-  /// or a validation error message on failure.
+  /// <see cref="Result{T}"/> с результатом разбора.
+  /// При успехе возвращает отсортированный список уникальных значений.
+  /// При ошибке возвращает текстовое описание причины.
   /// </returns>
+  /// <remarks>
+  /// <para>
+  /// Семантика диапазонов:
+  /// </para>
+  /// <list type="bullet">
+  /// <item><description><c>-N</c> трактуется как диапазон от <c>1</c> до <c>N</c>.</description></item>
+  /// <item><description><c>0-N</c>, <c>0</c> и <c>0-</c> допустимы.</description></item>
+  /// <item><description>Явные значения меньше <c>0</c> считаются ошибкой.</description></item>
+  /// <item><description>Пробелы вокруг символа <c>-</c> внутри диапазона допустимы.</description></item>
+  /// </list>
+  /// <para>
+  /// Поддерживаемые разделители токенов:
+  /// <c>" ,.;_:#!|\\/'\""</c>.
+  /// </para>
+  /// <para>
+  /// Метод не использует исключения для ошибок пользовательского ввода; ошибки
+  /// возвращаются через <see cref="Result{T}"/>.
+  /// </para>
+  /// </remarks>
   public static Result<List<int>> Parse(string? rangeSource, int maxRangeValue)
   {
     if (rangeSource is null)
