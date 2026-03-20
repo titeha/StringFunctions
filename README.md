@@ -1,61 +1,385 @@
-## IntRangeParser
+# StringFunctions
 
-Парсер строковых диапазонов целых чисел.
+`StringFunctions` — небольшая библиотека с утилитами для работы со строками.
 
-Поддерживает:
+Сейчас библиотека включает четыре основных блока:
 
-- `N`
-- `N-M`
-- `-N` -> от `1` до `N`
-- `N-` -> от `N` до `maxRangeValue`
-- явный `0`
-- пробелы вокруг `-`
+- проверка баланса скобок и кавычек;
+- нормализация строк;
+- разбор строковых диапазонов целых чисел в коллекцию;
+- форматирование коллекции целых чисел обратно в строку диапазонов.
+
+Библиотека ориентирована на практическое использование в прикладных проектах и делает упор на:
+
+- предсказуемый контракт;
+- отсутствие исключений для ошибок пользовательского ввода;
+- возврат результатов через `ResultType`;
+- поддержку нескольких версий .NET;
+- покрытие тестами.
+
+---
+
+## Поддерживаемые платформы
+
+Библиотека мультитаргетится на:
+
+- `net6.0`
+- `net7.0`
+- `net8.0`
+- `net9.0`
+- `net10.0`
+
+Несмотря на то что `net6.0` и `net7.0` уже не поддерживаются Microsoft, они сохранены ради совместимости с существующими проектами.
+
+---
+
+## Зависимости
+
+Публичный API библиотеки использует `ResultType`.
+
+Это означает, что методы, которые могут завершиться ошибкой пользовательского ввода или валидации, возвращают:
+
+- `Result<T>` — если нужно вернуть значение;
+- `Result` — если нужно вернуть только факт успеха или текст ошибки.
+
+Такой подход позволяет не использовать исключения для штатных ошибок входных данных.
+
+---
+
+## Возможности библиотеки
+
+### 1. Проверка баланса скобок и кавычек
+
+Проверка выполняется методом `IsBracesBalanced`.
+
+Поддерживаются:
+
+- заранее известные наборы скобок;
+- пользовательские пары символов;
+- смешанный сценарий, когда используются и известные типы, и пользовательские пары.
+
+Метод возвращает:
+
+- признак сбалансированности;
+- символ, на котором баланс нарушается.
 
 Пример:
 
 ```csharp
-var result = IntRangeParser.Parse("0-3, 10 - 12, 20-", 25);
-```
+using StringFunctions;
+using StringFunctions.Braces;
 
-Полный контракт: [docs/int-range-parser.md](docs/int-range-parser.md)
+string source = "(a + b) * [c]";
 
-## IntRangeFormatter
-
-`IntRangeFormatter` преобразует последовательность целых чисел в нормализованную строку диапазонов.
-
-Поддерживает:
-
-- одиночные значения: `N`
-- обычные диапазоны: `N-M`
-- открытые диапазоны во второй перегрузке:
-  - `-N` для `1..N`
-  - `N-` для `N..maxRangeValue`
-  - `0-` для `0..maxRangeValue`
-- `IEnumerable<int>` как вход
-- сортировку и удаление дублей перед форматированием
-
-Пример:
-
-```csharp
-var result = IntRangeFormatter.Format(new[] { 7, 3, 2, 1, 3, 8, 9, 5 }, ", ");
+var result = source.IsBracesBalanced(KnownBracesTypes.CommonBraces);
 
 if (result.IsSuccess)
 {
-    Console.WriteLine(result.Value);
-    // 1-3, 5, 7-9
+    var (isBalanced, unbalancedSymbol) = result.Value;
+    Console.WriteLine(isBalanced);       // True
+    Console.WriteLine(unbalancedSymbol); // '\0'
+}
+else
+{
+    Console.WriteLine(result.Error);
+}
+```
+
+Пример с ошибкой:
+
+```csharp
+using StringFunctions;
+using StringFunctions.Braces;
+
+string source = "(a + b]";
+
+var result = source.IsBracesBalanced(KnownBracesTypes.CommonBraces);
+
+if (result.IsSuccess)
+{
+    var (isBalanced, unbalancedSymbol) = result.Value;
+    Console.WriteLine(isBalanced);       // False
+    Console.WriteLine(unbalancedSymbol); // '('
+}
+```
+
+---
+
+### 2. Нормализация строк
+
+Нормализация выполняется методом `NormalizeString`.
+
+Метод приводит строку к более чистому виду по внутренним правилам библиотеки, убирая:
+
+- лишние пробелы;
+- лишние пробелы перед пунктуацией;
+- повторяющиеся пробелы;
+- лишние разделители вокруг некоторых открывающих и закрывающих символов.
+
+Пример:
+
+```csharp
+using StringFunctions;
+
+string source = "  Привет   ,   мир !  ";
+
+var result = source.NormalizeString();
+
+if (result.IsSuccess)
+{
+    Console.WriteLine(result.Value); // "Привет, мир!"
+}
+else
+{
+    Console.WriteLine(result.Error);
+}
+```
+
+Для `null` возвращается `Failure`, а для пустой или состоящей только из пробелов строки — `Success(string.Empty)`.
+
+---
+
+### 3. Разбор строковых диапазонов целых чисел
+
+Разбор выполняется методом `IntRangeParser.Parse`.
+
+Поддерживаются формы записи:
+
+- `N`
+- `N-M`
+- `-N`
+- `N-`
+
+Дополнительно поддерживаются:
+
+- явный `0`;
+- `0-N`;
+- `0-`;
+- пробелы вокруг `-` внутри диапазона.
+
+Результат всегда:
+
+- отсортирован по возрастанию;
+- не содержит дублей.
+
+Пример:
+
+```csharp
+using StringFunctions;
+
+var result = IntRangeParser.Parse("1,3-5,8,10-12", 20);
+
+if (result.IsSuccess)
+{
+    // [1, 3, 4, 5, 8, 10, 11, 12]
+    Console.WriteLine(string.Join(", ", result.Value));
+}
+else
+{
+    Console.WriteLine(result.Error);
 }
 ```
 
 Пример с открытыми диапазонами:
 
 ```csharp
+using StringFunctions;
+
+var result = IntRangeParser.Parse("-5, 10-", 12);
+
+if (result.IsSuccess)
+{
+    // [1, 2, 3, 4, 5, 10, 11, 12]
+    Console.WriteLine(string.Join(", ", result.Value));
+}
+```
+
+Пример с нулём:
+
+```csharp
+using StringFunctions;
+
+var result = IntRangeParser.Parse("0-3, 10 - 12", 20);
+
+if (result.IsSuccess)
+{
+    // [0, 1, 2, 3, 10, 11, 12]
+    Console.WriteLine(string.Join(", ", result.Value));
+}
+```
+
+Полная спецификация: [docs/int-range-parser.md](docs/int-range-parser.md)
+
+---
+
+### 4. Форматирование коллекции чисел в строку диапазонов
+
+Форматирование выполняется методом `IntRangeFormatter.Format`.
+
+Библиотека поддерживает две перегрузки:
+
+- базовую — без знания `maxRangeValue`;
+- расширенную — с `maxRangeValue` и возможностью использовать открытые диапазоны.
+
+Formatter:
+
+- принимает `IEnumerable<int>`;
+- сортирует входные значения;
+- удаляет дубли;
+- склеивает соседние значения в диапазоны.
+
+Пример базовой перегрузки:
+
+```csharp
+using StringFunctions;
+
+var result = IntRangeFormatter.Format(new[] { 7, 3, 2, 1, 3, 8, 9, 5 }, ", ");
+
+if (result.IsSuccess)
+{
+    Console.WriteLine(result.Value); // "1-3, 5, 7-9"
+}
+```
+
+Пример с использованием открытых диапазонов:
+
+```csharp
+using StringFunctions;
+
 var result = IntRangeFormatter.Format(new[] { 1, 2, 3, 4, 5 }, 10);
 
 if (result.IsSuccess)
 {
-    Console.WriteLine(result.Value);
-    // -5
+    Console.WriteLine(result.Value); // "-5"
 }
 ```
 
-Полный контракт formatter-а: [docs/int-range-formatter.md](docs/int-range-formatter.md)
+Пример с явным нулём:
+
+```csharp
+using StringFunctions;
+
+var result = IntRangeFormatter.Format(new[] { 0, 1, 2, 3 }, 3);
+
+if (result.IsSuccess)
+{
+    Console.WriteLine(result.Value); // "0-"
+}
+```
+
+Полная спецификация: [docs/int-range-formatter.md](docs/int-range-formatter.md)
+
+---
+
+## Краткий контракт `IntRangeParser`
+
+### Поддерживаемый формат
+
+- `N` — одиночное число;
+- `N-M` — обычный диапазон;
+- `-N` — открытый слева диапазон от `1` до `N`;
+- `N-` — открытый справа диапазон от `N` до `maxRangeValue`.
+
+### Правила для нуля
+
+- `0` допустим;
+- `0-N` допустим;
+- `0-` допустим;
+- `-N` всегда означает диапазон от `1`, а не от `0`.
+
+### Ошибки
+
+Метод возвращает `Failure`, если:
+
+- `rangeSource == null`;
+- `maxRangeValue < 0`;
+- токен имеет некорректный формат;
+- явно указано значение меньше `0`;
+- граница выходит за пределы `0..maxRangeValue`;
+- `-N` используется не первым токеном;
+- `N-` используется не последним токеном.
+
+---
+
+## Краткий контракт `IntRangeFormatter`
+
+Formatter принимает произвольную последовательность `IEnumerable<int>` и возвращает нормализованную строку диапазонов.
+
+### Правила
+
+- отрицательные значения недопустимы;
+- вход может быть неотсортированным;
+- дубли допустимы;
+- перед форматированием вход сортируется и дедуплицируется;
+- соседние значения объединяются в диапазоны.
+
+### Открытые диапазоны
+
+Во второй перегрузке при `useOpenRanges = true` могут использоваться:
+
+- `-N` для диапазона `1..N`;
+- `N-` для диапазона `N..maxRangeValue`;
+- `0-` для диапазона `0..maxRangeValue`.
+
+---
+
+## Подключение
+
+### Вариант 1. Через исходный код / ProjectReference
+
+```xml
+<ProjectReference Include="..\StringFunctions\StringFunctions.csproj" />
+```
+
+### Вариант 2. Через пакет
+
+После публикации библиотеку можно будет подключать как пакет NuGet.
+
+---
+
+## Тестирование
+
+Для библиотеки добавлены автоматические тесты.
+
+Покрываются:
+
+- parser;
+- formatter;
+- проверка баланса скобок;
+- нормализация строк.
+
+Запуск тестов:
+
+```bash
+dotnet test
+```
+
+---
+
+## Документация
+
+Дополнительные материалы:
+
+- [docs/int-range-parser.md](docs/int-range-parser.md)
+- [docs/int-range-formatter.md](docs/int-range-formatter.md)
+
+Также для публичного API добавлены XML-комментарии.
+
+---
+
+## Лицензия
+
+См. файл [LICENSE](LICENSE).
+
+---
+
+## Статус проекта
+
+Проект развивается как прикладная библиотека с упором на практическую полезность и предсказуемое поведение API.
+
+Основные недавние изменения:
+
+- добавлен `IntRangeParser`;
+- добавлен `IntRangeFormatter`;
+- публичный API приведён к стилю `ResultType`;
+- добавлены тесты и документация.
