@@ -4,25 +4,29 @@ using ResultType;
 
 namespace StringFunctions;
 
+/// <summary>
+/// Предоставляет вспомогательные методы для работы со строками.
+/// </summary>
 public static class StringHelperExtensions
 {
-  private static readonly string _leftBraces = "([{<";
-  private static readonly string _rightBraces = ")]}>";
-  private static readonly string _leftQuotas = "\"'«“";
-  private static readonly string _rightQuotas = "»”";
-  private static readonly string _punctuation = ".,?!;:";
-  private static readonly string _commonSpecialSymbols = "-\\/_";
-  private static readonly string _otherSpecialSymbols = "$#=+%^&|";
-  private const char _whitespace = ' ';
-  private static readonly string _openingSymbols = _leftBraces + _leftQuotas;
-  private static readonly string _closingSymbols = _rightQuotas + _rightBraces;
-  private static readonly string _allSpecialSymbols = string.Concat(_commonSpecialSymbols, _otherSpecialSymbols);
-  private static readonly string _fullDelimitersList = string.Concat(_openingSymbols, _punctuation, _closingSymbols, _allSpecialSymbols) + _whitespace;
-  private static readonly string _punctuationClosingSpecialSymbols = string.Concat(_punctuation, _closingSymbols, _allSpecialSymbols);
-  private static readonly string _punctuationWhitespace = _punctuation + _whitespace;
-  private static readonly string _rightBracesAndRightQuotas = _rightBraces + _rightQuotas;
+  private static readonly string LeftBraces = "([{<";
+  private static readonly string RightBraces = ")]}>";
+  private static readonly string LeftQuotes = "\"'«“";
+  private static readonly string RightQuotes = "»”";
+  private static readonly string Punctuation = ".,?!;:";
+  private static readonly string CommonSpecialSymbols = "-\\/_";
+  private static readonly string OtherSpecialSymbols = "$#=+%^&|";
 
+  private const char _whitespace = ' ';
   private const string _nullSourceError = "Исходная строка не может быть null.";
+
+  private static readonly string _openingSymbols = LeftBraces + LeftQuotes;
+  private static readonly string _closingSymbols = RightQuotes + RightBraces;
+  private static readonly string _allSpecialSymbols = string.Concat(CommonSpecialSymbols, OtherSpecialSymbols);
+  private static readonly string _fullDelimitersList = string.Concat(_openingSymbols, Punctuation, _closingSymbols, _allSpecialSymbols) + _whitespace;
+  private static readonly string _punctuationClosingSpecialSymbols = string.Concat(Punctuation, _closingSymbols, _allSpecialSymbols);
+  private static readonly string _punctuationWhitespace = Punctuation + _whitespace;
+  private static readonly string _rightBracesAndRightQuotes = RightBraces + RightQuotes;
 
   /// <summary>
   /// Нормализует строку, удаляя лишние разделители и пробелы по заданным правилам.
@@ -48,31 +52,58 @@ public static class StringHelperExtensions
 
   private static string NormalizeStringCore(string source)
   {
-    var normalizingString = new StringBuilder(source.Trim());
-    int i = 0;
+    ReadOnlySpan<char> text = source.AsSpan().Trim();
+    if (text.IsEmpty)
+      return string.Empty;
 
-    while (i < normalizingString.Length)
+    var normalized = new StringBuilder(text.Length);
+
+    foreach (char current in text)
     {
-      char curSymbol = normalizingString[i];
+      // Убираем ведущие закрывающие/пунктуационные/спецсимволы.
+      if (normalized.Length == 0)
+      {
+        if (_punctuationClosingSpecialSymbols.IsDelimiter(current) || current == _whitespace)
+          continue;
 
-      if (_fullDelimitersList.IsDelimiter(curSymbol))
-        if (i == 0 && _punctuationClosingSpecialSymbols.IsDelimiter(curSymbol))
-          normalizingString.Remove(0, 1);
-        else if (i > 0 && _punctuationWhitespace.IsDelimiter(curSymbol) && _openingSymbols.IsDelimiter(normalizingString[i - 1]))
-          normalizingString.Remove(i, 1);
-        else if (i > 0 && _rightBracesAndRightQuotas.IsDelimiter(curSymbol) && _punctuationWhitespace.IsDelimiter(normalizingString[i - 1]))
-          normalizingString.Remove(--i, 1);
-        else if (i > 0 && _punctuation.IsDelimiter(curSymbol) && normalizingString[i - 1] == _whitespace)
-          normalizingString.Remove(--i, 1);
-        else if (i > 0 && curSymbol == _whitespace && normalizingString[i - 1] == _whitespace)
-          normalizingString.Remove(--i, 1);
-        else
-          i++;
-      else
-        i++;
+        normalized.Append(current);
+        continue;
+      }
+
+      char previous = normalized[^1];
+
+      // Убираем пунктуацию и пробелы сразу после открывающих символов.
+      if (_openingSymbols.IsDelimiter(previous) && _punctuationWhitespace.IsDelimiter(current))
+        continue;
+
+      // Перед закрывающим символом удаляем все пробелы и пунктуацию.
+      if (_rightBracesAndRightQuotes.IsDelimiter(current))
+      {
+        while (normalized.Length > 0 && _punctuationWhitespace.IsDelimiter(normalized[^1]))
+          normalized.Length--;
+
+        normalized.Append(current);
+        continue;
+      }
+
+      // Убираем пробел перед пунктуацией.
+      if (Punctuation.IsDelimiter(current))
+      {
+        while (normalized.Length > 0 && normalized[^1] == _whitespace)
+          normalized.Length--;
+
+        normalized.Append(current);
+        continue;
+      }
+
+      // Схлопываем повторные пробелы.
+      if (current == _whitespace && previous == _whitespace)
+        continue;
+
+      normalized.Append(current);
     }
 
-    return normalizingString.ToString();
+    return normalized.ToString();
   }
 
   public static bool IsDelimiter(this string delimiters, char source) => delimiters.IndexOf(source) >= 0;
