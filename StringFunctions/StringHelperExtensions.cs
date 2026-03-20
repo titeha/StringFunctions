@@ -5,7 +5,7 @@ using ResultType;
 namespace StringFunctions;
 
 /// <summary>
-/// Предоставляет вспомогательные методы для работы со строками.
+/// Предоставляет вспомогательные методы расширения для работы со строками.
 /// </summary>
 public static class StringHelperExtensions
 {
@@ -29,15 +29,17 @@ public static class StringHelperExtensions
   private static readonly string _rightBracesAndRightQuotes = RightBraces + RightQuotes;
 
   /// <summary>
-  /// Нормализует строку, удаляя лишние разделители и пробелы по заданным правилам.
+  /// Нормализует строку, удаляя лишние пробелы и некорректные сочетания пробелов,
+  /// знаков препинания, скобок, кавычек и специальных символов.
   /// </summary>
   /// <param name="source">Исходная строка.</param>
   /// <returns>
-  /// Успешный результат с нормализованной строкой либо ошибку, если <paramref name="source"/> равен <see langword="null"/>.
+  /// Успешный результат содержит нормализованную строку.
+  /// Если входная строка равна <c>null</c>, возвращается <c>Failure</c> с текстом ошибки.
   /// </returns>
   /// <remarks>
-  /// <para><see langword="null"/> возвращает <c>Failure</c>.</para>
-  /// <para>Пустая или состоящая только из пробелов строка возвращает <c>Success(string.Empty)</c>.</para>
+  /// Пустая строка и строка, состоящая только из пробельных символов,
+  /// нормализуются в пустую строку.
   /// </remarks>
   public static Result<string> NormalizeString(this string? source)
   {

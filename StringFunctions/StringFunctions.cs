@@ -5,13 +5,13 @@ using StringFunctions.Braces;
 namespace StringFunctions;
 
 /// <summary>
-/// Предоставляет методы для проверки баланса скобок и кавычек в строке.
+/// Предоставляет методы для работы со строками.
 /// </summary>
 public static class StringFunctions
 {
-  private const char ZeroCodeSymbol = '\x0';
-  private const string NoBracesTypesPresentError = "Не указаны виды проверяемых символов.";
-  private const string NullSourceError = "Проверяемая строка не может быть null.";
+  private const char _zeroCodeSymbol = '\x0';
+  private const string _noBracesTypesPresentError = "Не указаны виды проверяемых символов.";
+  private const string _nullSourceError = "Проверяемая строка не может быть null.";
 
   /// <summary>
   /// Проверяет баланс скобок и кавычек в строке.
@@ -20,16 +20,16 @@ public static class StringFunctions
   /// <param name="bracesTypes">Набор известных типов скобок и кавычек.</param>
   /// <param name="bracesSymbols">Дополнительные пользовательские пары символов.</param>
   /// <returns>
-  /// Успешный результат с кортежем:
+  /// Успешный результат содержит кортеж:
   /// <list type="bullet">
   /// <item><description><c>IsBalanced</c> — признак сбалансированности.</description></item>
-  /// <item><description><c>UnbalancedSymbol</c> — проблемный символ или <c>'\0'</c>, если баланс корректен.</description></item>
+  /// <item><description><c>UnbalancedSymbol</c> — несбалансированный символ или <c>'\0'</c>, если баланс не нарушен.</description></item>
   /// </list>
+  /// Если входные параметры некорректны, возвращается <c>Failure</c> с текстом ошибки.
   /// </returns>
   /// <remarks>
-  /// <para>Для <see langword="null"/> возвращается <c>Failure</c>.</para>
-  /// <para>Пустая строка считается сбалансированной и возвращает <c>Success((true, '\0'))</c>.</para>
-  /// <para>Если не указаны ни <paramref name="bracesTypes"/>, ни <paramref name="bracesSymbols"/>, возвращается <c>Failure</c>.</para>
+  /// Пустая строка считается сбалансированной.
+  /// Значение <c>null</c> считается ошибкой входных данных.
   /// </remarks>
   public static Result<(bool IsBalanced, char UnbalancedSymbol)> IsBracesBalanced(
     this string? source,
@@ -37,10 +37,10 @@ public static class StringFunctions
     params (char, char)[] bracesSymbols)
   {
     if (source is null)
-      return Result.Failure<(bool IsBalanced, char UnbalancedSymbol)>(NullSourceError);
+      return Result.Failure<(bool IsBalanced, char UnbalancedSymbol)>(_nullSourceError);
 
     if (source.Length == 0)
-      return Result.Success((true, ZeroCodeSymbol));
+      return Result.Success((true, _zeroCodeSymbol));
 
     Result<BraceManager> managerResult = CreateBraceManager(bracesTypes, bracesSymbols);
     if (managerResult.IsFailure)
@@ -57,7 +57,7 @@ public static class StringFunctions
     bool hasSymbols = bracesSymbols.Length > 0;
 
     if (!hasTypes && !hasSymbols)
-      return Result.Failure<BraceManager>(NoBracesTypesPresentError);
+      return Result.Failure<BraceManager>(_noBracesTypesPresentError);
 
     try
     {
@@ -72,7 +72,7 @@ public static class StringFunctions
     catch (ArgumentException ex)
     {
       string message = string.IsNullOrWhiteSpace(ex.Message)
-        ? NoBracesTypesPresentError
+        ? _noBracesTypesPresentError
         : ex.Message;
 
       return Result.Failure<BraceManager>(message);
@@ -83,7 +83,7 @@ public static class StringFunctions
   {
     char[] bracesList = manager.BracesList;
     var stack = new Stack<char>();
-    char returnSymbol = ZeroCodeSymbol;
+    char returnSymbol = _zeroCodeSymbol;
 
     int lastIndex = source.IndexOfAny(bracesList);
 
@@ -109,9 +109,9 @@ public static class StringFunctions
       lastIndex = source.IndexOfAny(bracesList, lastIndex + 1);
     }
 
-    bool isBalanced = stack.Count == 0 && returnSymbol == ZeroCodeSymbol;
+    bool isBalanced = stack.Count == 0 && returnSymbol == _zeroCodeSymbol;
 
-    if (!isBalanced && returnSymbol == ZeroCodeSymbol)
+    if (!isBalanced && returnSymbol == _zeroCodeSymbol)
       returnSymbol = stack.Pop();
 
     return Result.Success((isBalanced, returnSymbol));
