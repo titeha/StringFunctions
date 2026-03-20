@@ -1,73 +1,105 @@
-﻿using StringFunctions.Braces;
+﻿using ResultType;
+
+using StringFunctions.Braces;
 
 namespace StringFunctions;
 
 public static class StringFunctions
 {
-  #region Методы
+  private const char _zeroCodeSym = '\x0';
+  private const string _noBracesTypesPresent = "Не указаны виды проверяемых символов.";
+  private const string _nullSourceError = "Проверяемая строка не может быть null.";
+
   /// <summary>
-  /// Функция проверяет баланс скобок в строке. Проверяет баланс всех видов скобок и кавычек
+  /// Проверяет баланс скобок и кавычек в строке.
   /// </summary>
-  /// <param name="source">Проверяемая строка</param>
-  /// <returns>Возвращаемый кортеж, булево значение - признак сбалансированности скобок, символ - несбалансированный символ (символ с кодом 0, если всё ок)</returns>
-  public static (bool, char) IsBracesBalanced(this string source, KnownBracesTypes bracesTypes = KnownBracesTypes.Other, params (char, char)[] bracesSymbols)
+  /// <param name="source">Проверяемая строка.</param>
+  /// <param name="bracesTypes">Набор известных типов скобок/кавычек.</param>
+  /// <param name="bracesSymbols">Дополнительные пользовательские пары символов.</param>
+  /// <returns>
+  /// Успешный результат с кортежем:
+  /// <list type="bullet">
+  /// <item><description><c>IsBalanced</c> — признак сбалансированности.</description></item>
+  /// <item><description><c>UnbalancedSymbol</c> — проблемный символ или <c>'\0'</c>, если баланс корректен.</description></item>
+  /// </list>
+  /// </returns>
+  /// <remarks>
+  /// <para>Для <see langword="null"/> возвращается <c>Failure</c>.</para>
+  /// <para>Пустая строка считается сбалансированной и возвращает <c>Success((true, '\0'))</c>.</para>
+  /// <para>Если не указаны ни <paramref name="bracesTypes"/>, ни <paramref name="bracesSymbols"/>, возвращается <c>Failure</c>.</para>
+  /// </remarks>
+  public static Result<(bool IsBalanced, char UnbalancedSymbol)> IsBracesBalanced(
+    this string? source,
+    KnownBracesTypes bracesTypes = KnownBracesTypes.Other,
+    params (char, char)[] bracesSymbols)
   {
-    if (source.IsNullOrEmpty())
-      return (true, '\x0');
+    if (source is null)
+      return Result.Failure<(bool IsBalanced, char UnbalancedSymbol)>(_nullSourceError);
 
-    if (bracesTypes.IsEmpty() && bracesSymbols.Length == 0)
-      throw new ArgumentException();
+    if (source.Length == 0)
+      return Result.Success<(bool IsBalanced, char UnbalancedSymbol)>((true, _zeroCodeSym));
 
-    BraceManager _manager;
-    if (bracesTypes.IsEmpty() && bracesSymbols.Length > 0)
-      _manager = new BraceManager(bracesSymbols);
-    else if (!bracesTypes.IsEmpty() && bracesSymbols.Length == 0)
-      _manager = new BraceManager(bracesTypes);
-    else if (!bracesTypes.IsEmpty() && 0 < bracesSymbols.Length)
-      _manager = new BraceManager(bracesTypes, bracesSymbols);
-    else
-      _manager = new BraceManager(KnownBracesTypes.All);
+    Result<BraceManager> managerResult = CreateBraceManager(bracesTypes, bracesSymbols);
+    if (managerResult.IsFailure)
+      return Result.Failure<(bool IsBalanced, char UnbalancedSymbol)>(managerResult.Error!);
 
-    return IsBracesBalanced(source, _manager);
+    return CheckBracesBalance(source, managerResult.Value!);
   }
 
-  private static (bool, char) IsBracesBalanced(string source, BraceManager manager)
+  private static Result<BraceManager> CreateBraceManager(
+    KnownBracesTypes bracesTypes,
+    params (char, char)[] bracesSymbols)
   {
-    const char _zeroCodeSym = '\x0';
-    char[] _bracesList = manager.BracesList;
-    Stack<char> _result = new();
-    char _returnSymbol = _zeroCodeSym;
-    bool _isBalanced;
+    bool hasTypes = !bracesTypes.IsEmpty();
+    bool hasSymbols = bracesSymbols.Length > 0;
 
-    int _lastIndex = source.IndexOfAny(_bracesList);
+    if (!hasTypes && !hasSymbols)
+      return Result.Failure<BraceManager>(_noBracesTypesPresent);
 
-    while (_lastIndex >= 0)
+    if (hasTypes && hasSymbols)
+      return Result.Success(new BraceManager(bracesTypes, bracesSymbols));
+
+    if (hasTypes)
+      return Result.Success(new BraceManager(bracesTypes));
+
+    return Result.Success(new BraceManager(bracesSymbols));
+  }
+
+  private static Result<(bool IsBalanced, char UnbalancedSymbol)> CheckBracesBalance(string source, BraceManager manager)
+  {
+    char[] bracesList = manager.BracesList;
+    var stack = new Stack<char>();
+    char returnSymbol = _zeroCodeSym;
+
+    int lastIndex = source.IndexOfAny(bracesList);
+
+    while (lastIndex >= 0)
     {
-      char _lookingValue = source[_lastIndex];
+      char lookingValue = source[lastIndex];
 
-      if (manager.IsPaired(_lookingValue))
-        if (manager.IsOpening(_lookingValue))
-          _result.Push(_lookingValue);
-        else if (0 < _result.Count && manager.IsPair(_lookingValue, _result.Peek()))
-          _result.Pop();
+      if (manager.IsPaired(lookingValue))
+        if (manager.IsOpening(lookingValue))
+          stack.Push(lookingValue);
+        else if (stack.Count > 0 && manager.IsPair(lookingValue, stack.Peek()))
+          stack.Pop();
         else
         {
-          _returnSymbol = 0 < _result.Count ? _result.Pop() : _lookingValue;
+          returnSymbol = stack.Count > 0 ? stack.Pop() : lookingValue;
           break;
         }
-      else if (0 < _result.Count && manager.IsPair(_lookingValue, _result.Peek()))
-        _result.Pop();
+      else if (stack.Count > 0 && manager.IsPair(lookingValue, stack.Peek()))
+        stack.Pop();
       else
-        _result.Push(_lookingValue);
+        stack.Push(lookingValue);
 
-      _lastIndex = source.IndexOfAny(_bracesList, 1 + _lastIndex);
+      lastIndex = source.IndexOfAny(bracesList, lastIndex + 1);
     }
 
-    _isBalanced = 0 == _result.Count && _zeroCodeSym == _returnSymbol;
-    if (!_isBalanced && _zeroCodeSym == _returnSymbol)
-      _returnSymbol = _result.Pop();
+    bool isBalanced = stack.Count == 0 && returnSymbol == _zeroCodeSym;
 
-    return (_isBalanced, _returnSymbol);
+    if (!isBalanced && returnSymbol == _zeroCodeSym)
+      returnSymbol = stack.Pop();
+
+    return Result.Success<(bool IsBalanced, char UnbalancedSymbol)>((isBalanced, returnSymbol));
   }
-  #endregion Методы
 }
