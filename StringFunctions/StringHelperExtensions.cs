@@ -108,9 +108,25 @@ public static class StringHelperExtensions
     return normalized.ToString();
   }
 
+  /// <summary>
+  /// Проверяет, содержится ли символ в строке разделителей.
+  /// </summary>
+  /// <param name="delimiters">Строка, содержащая набор символов-разделителей.</param>
+  /// <param name="source">Проверяемый символ.</param>
+  /// <returns><see langword="true"/>, если символ найден в строке разделителей; иначе — <see langword="false"/>.</returns>
   public static bool IsDelimiter(this string delimiters, char source) => delimiters.IndexOf(source) >= 0;
 
+  /// <summary>
+  /// Проверяет, является ли строка <c>null</c> или пустой.
+  /// </summary>
+  /// <param name="source">Проверяемая строка.</param>
+  /// <returns><see langword="true"/>, если строка равна <c>null</c> или пуста; иначе — <see langword="false"/>.</returns>
   public static bool IsNullOrEmpty(this string? source) => string.IsNullOrEmpty(source);
 
+  /// <summary>
+  /// Проверяет, является ли строка <c>null</c>, пустой или состоящей только из пробельных символов.
+  /// </summary>
+  /// <param name="source">Проверяемая строка.</param>
+  /// <returns><see langword="true"/>, если строка равна <c>null</c>, пуста или состоит только из пробелов; иначе — <see langword="false"/>.</returns>
   public static bool IsNullOrWhiteSpace(this string? source) => string.IsNullOrWhiteSpace(source);
 }
