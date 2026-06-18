@@ -33,6 +33,14 @@ public class BracesManagerTests
     Assert.Throws<ArgumentException>(() => new BraceManager(bracesTypes));
 
   [Fact]
+  public void Create_brace_manager_with_conflicting_custom_pairs_Exception_throws() =>
+    Assert.Throws<ArgumentException>(() => new BraceManager(('(', ')'), ('(', ']')));
+
+  [Fact]
+  public void Create_brace_manager_with_custom_pair_conflicting_known_type_Exception_throws() =>
+    Assert.Throws<ArgumentException>(() => new BraceManager(KnownBracesTypes.RoundedBraces, ('(', '#')));
+
+  [Fact]
   public void Create_brace_manager_with_correct_parameters_Manager_is_not_null()
   {
     var actualBraceManager = new BraceManager(KnownBracesTypes.All);

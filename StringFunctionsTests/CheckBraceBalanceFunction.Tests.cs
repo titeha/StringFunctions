@@ -30,6 +30,16 @@ public class CheckBraceBalanceFunctionTests
   }
 
   [Fact]
+  public void Check_balance_with_conflicting_custom_pairs_Returns_failure_without_throwing()
+  {
+    const string checkString = "(a + b)";
+
+    string error = ParseFailure(checkString.IsBracesBalanced(KnownBracesTypes.Other, ('(', ')'), ('(', ']')));
+
+    Assert.Contains("более чем в одной паре", error, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
   public void Check_balance_round_braces_in_balanced_string_Returns_true()
   {
     const string checkString = " (s(d)d) ";

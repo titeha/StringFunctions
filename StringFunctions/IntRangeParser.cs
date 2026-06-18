@@ -34,6 +34,9 @@ public static class IntRangeParser
 {
   private const string _delimiters = " ,.;_:#!|\\/'\"";
 
+  private const string _resultTooLargeError =
+    "Результирующий набор слишком велик для размещения в списке (превышен Array.MaxLength).";
+
   private const int _bitsPerWord = 64;
   private const int _wordShift = 6;
   private const int _wordBitMask = _bitsPerWord - 1;
@@ -139,6 +142,9 @@ public static class IntRangeParser
         return Result.Failure<List<int>>(tokenResult.Error!);
     }
 
+    if ((uint)bitSet.Count > Array.MaxLength)
+      return Result.Failure<List<int>>(_resultTooLargeError);
+
     return Result.Success(bitSet.ToList());
   }
 
@@ -164,6 +170,10 @@ public static class IntRangeParser
       return Result.Failure<List<int>>(boundsResult.Error!);
 
     RangeBounds bounds = boundsResult.Value;
+
+    if ((long)bounds.End - bounds.Start + 1 > Array.MaxLength)
+      return Result.Failure<List<int>>(_resultTooLargeError);
+
     return Result.Success(MaterializeRange(bounds.Start, bounds.End));
   }
 
@@ -195,6 +205,9 @@ public static class IntRangeParser
     });
 
     MergeInfo mergeInfo = MergeRangesInPlace(ranges);
+
+    if (mergeInfo.Cardinality > Array.MaxLength)
+      return Result.Failure<List<int>>(_resultTooLargeError);
 
     // One merged range -> direct materialization.
     if (mergeInfo.Count == 1)
@@ -600,6 +613,8 @@ public static class IntRangeParser
 
   private interface IBitSet
   {
+    int Count { get; }
+
     void Set(int value);
 
     void SetRange(int start, int end);
@@ -615,6 +630,8 @@ public static class IntRangeParser
     private int _minValueSet = int.MaxValue;
     private int _maxValueSet;
     private bool _hasZero;
+
+    public int Count => _count;
 
     public void Set(int value)
     {
@@ -833,6 +850,8 @@ public static class IntRangeParser
     private int _minValueSet = int.MaxValue;
     private int _maxValueSet;
     private bool _hasZero;
+
+    public int Count => _count;
 
     public SegmentedBitSet64(int maxAllowedValue)
     {

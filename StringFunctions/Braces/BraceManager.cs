@@ -6,6 +6,7 @@ internal class BraceManager
 {
   #region Константа
   private const string _noBracesTypesPresent = "Не указаны виды проверяемых символов!";
+  private const string _conflictingBraces = "Символ '{0}' задан более чем в одной паре скобок/кавычек.";
   #endregion
 
   #region Поля
@@ -33,6 +34,9 @@ internal class BraceManager
       ThrowArgumentException();
 
     AddCommonBracesPair(bracesTypes);
+
+    _bracesList = _bracesList.Distinct().ToList();
+    ValidateNoConflictingBraces();
   }
 
   public BraceManager(params (char, char)[] bracesSymbols)
@@ -43,6 +47,7 @@ internal class BraceManager
     AddCustomBracesPair(bracesSymbols);
 
     _bracesList = _bracesList.Distinct().ToList();
+    ValidateNoConflictingBraces();
   }
 
   public BraceManager(KnownBracesTypes bracesTypes, params (char, char)[] bracesSymbols)
@@ -54,6 +59,7 @@ internal class BraceManager
     AddCommonBracesPair(bracesTypes);
 
     _bracesList = _bracesList.Distinct().ToList();
+    ValidateNoConflictingBraces();
   }
   #endregion
 
@@ -91,6 +97,18 @@ internal class BraceManager
   public bool IsPair(char candidate, char checking) => _bracesList.Any(b => b.HasThisBrace(checking) && b.IsPair(candidate));
 
   public bool IsPaired(char candidate) => _bracesList.Single(v => v.HasThisBrace(candidate)).IsPaired;
+
+  // Гарантирует, что один и тот же символ не принадлежит двум разным парам.
+  // Без этой проверки IsPaired (.Single) бросил бы InvalidOperationException
+  // уже во время проверки баланса, в обход контракта Result.
+  private void ValidateNoConflictingBraces()
+  {
+    for (int i = 0; i < _bracesList.Count; i++)
+      foreach (char symbol in _bracesList[i])
+        for (int j = i + 1; j < _bracesList.Count; j++)
+          if (_bracesList[j].HasThisBrace(symbol))
+            throw new ArgumentException(string.Format(_conflictingBraces, symbol));
+  }
 
   private static void ThrowArgumentException() => throw new ArgumentException(_noBracesTypesPresent);
   #endregion

@@ -229,4 +229,25 @@ public class IntRangeParserTests
     List<int> actual = ParseSuccess("0-3, 8, 10 - 12, 20-", 22);
     Assert.Equal([0, 1, 2, 3, 8, 10, 11, 12, 20, 21, 22], actual);
   }
+
+  [Fact]
+  public void Parse_SingleTokenExceedingArrayMaxLength_ReturnsFailureWithoutThrowing()
+  {
+    string error = ParseFailure("0-", int.MaxValue);
+    Assert.Contains("слишком велик", error, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
+  public void Parse_MultiTokenExceedingArrayMaxLength_ReturnsFailureWithoutThrowing()
+  {
+    string error = ParseFailure("5, 10-", int.MaxValue);
+    Assert.Contains("слишком велик", error, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
+  public void Parse_SparseHugeRangeAtIntMaxValue_StillReturnsRequestedValues()
+  {
+    List<int> actual = ParseSuccess("1, 2000000000", int.MaxValue);
+    Assert.Equal([1, 2000000000], actual);
+  }
 }

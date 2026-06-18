@@ -131,7 +131,7 @@ public static class IntRangeFormatter
     int prev = 0;
     int index = 0;
 
-    foreach (int value in values.ToList())
+    foreach (int value in values)
     {
       if (value < 0)
         return Result.Failure<List<int>>($"Значение должно быть не меньше 0. Значение: {value}. Индекс: {index}.");
