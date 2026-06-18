@@ -309,7 +309,11 @@ Console.WriteLine(form); // One
 
 - учитывается грамматический род единиц (`один/одна/одно`, `два/две`);
 - разрядные слова согласуются с числом (`тысяча/тысячи/тысяч`, `миллион/миллиона/миллионов`);
+- поддерживается склонение по всем 6 падежам (`RussianCase`);
 - поддерживается весь диапазон `long`, включая отрицательные значения и `long.MinValue`.
+
+Перевод поддерживает склонение по падежам через перегрузку с `RussianCase`, а
+винительный падеж формируется для неодушевлённого счёта.
 
 Пример:
 
@@ -322,13 +326,29 @@ Console.WriteLine(RussianNumberToWords.Convert(1_234_567));
 Console.WriteLine(RussianNumberToWords.Convert(2000, RussianGender.Feminine));
 // "две тысячи"
 
+Console.WriteLine(RussianNumberToWords.Convert(523, RussianCase.Genitive));
+// "пятисот двадцати трёх"
+
 Console.WriteLine(RussianNumberToWords.Convert(-5));
 // "минус пять"
 ```
 
-> Модули работы с числительными развиваются поэтапно: согласование с числом и перевод
-> в слова уже реализованы; склонение числительных по падежам и сумма/валюта прописью —
-> планируются как следующие этапы.
+### Эргономичные методы расширения
+
+Для чисел `int` и `long` доступны методы расширения (пространство имён `StringFunctions.Russian`):
+
+```csharp
+using StringFunctions.Russian;
+
+Console.WriteLine(523.ToRussianWords(RussianCase.Genitive)); // "пятисот двадцати трёх"
+Console.WriteLine(5.Pluralize("яблоко", "яблока", "яблок").Value); // "яблок"
+Console.WriteLine(2.Quantify("файл", "файла", "файлов").Value); // "2 файла"
+RussianPluralForm form = 5.GetRussianPluralForm(); // Many
+```
+
+> Модули работы с числительными развиваются поэтапно: согласование с числом, перевод
+> в слова и склонение по падежам уже реализованы; сумма/валюта прописью — планируется
+> как следующий этап.
 
 ---
 
