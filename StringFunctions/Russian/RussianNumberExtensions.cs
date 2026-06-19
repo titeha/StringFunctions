@@ -86,4 +86,8 @@ public static class RussianNumberExtensions
   /// <summary>Записывает время прописью на русском языке («цифровой» формат).</summary>
   public static Result<string> ToRussianWords(this TimeOnly time, RussianTimeZeroMinutes zeroMinutes = RussianTimeZeroMinutes.Omit) =>
     RussianTimeToWords.Convert(time, zeroMinutes);
+
+  /// <summary>Записывает время прописью на русском языке в разговорном виде.</summary>
+  public static Result<string> ToRussianColloquialWords(this TimeOnly time, bool includePartOfDay = false) =>
+    RussianColloquialTimeToWords.Convert(time, includePartOfDay);
 }
