@@ -286,4 +286,62 @@ public static class RussianNumberToWords
 
     return [nominative, oblique, oblique, nominative, stem + "ью", oblique];
   }
+
+  /// <summary>Слово «минус». Используется обратным парсером.</summary>
+  internal static string MinusWord => _minus;
+
+  /// <summary>Все падежные формы слова «ноль». Используются обратным парсером.</summary>
+  internal static IReadOnlyList<string> ZeroForms => _zero;
+
+  /// <summary>
+  /// Перечисляет все словоформы слагаемых (единицы, 10–19, десятки, сотни) во всех падежах и родах
+  /// вместе с их числовым значением. Используется обратным парсером для построения словаря.
+  /// </summary>
+  internal static IEnumerable<(string Form, int Value)> EnumerateAdderForms()
+  {
+    for (int value = 1; value <= 9; value++)
+    {
+      foreach (string form in _unitsMasculine[value])
+        if (form.Length > 0)
+          yield return (form, value);
+
+      foreach (string form in _unitsFeminine[value])
+        if (form.Length > 0)
+          yield return (form, value);
+
+      foreach (string form in _unitsNeuter[value])
+        if (form.Length > 0)
+          yield return (form, value);
+    }
+
+    for (int teen = 0; teen <= 9; teen++)
+      foreach (string form in _teens[teen])
+        yield return (form, 10 + teen);
+
+    for (int tens = 2; tens <= 9; tens++)
+      foreach (string form in _tens[tens])
+        if (form.Length > 0)
+          yield return (form, tens * 10);
+
+    for (int hundreds = 1; hundreds <= 9; hundreds++)
+      foreach (string form in _hundreds[hundreds])
+        if (form.Length > 0)
+          yield return (form, hundreds * 100);
+  }
+
+  /// <summary>
+  /// Перечисляет все словоформы разрядных слов (тысяча, миллион, ...) во всех падежах и числах
+  /// вместе с индексом разряда. Используется обратным парсером.
+  /// </summary>
+  internal static IEnumerable<(string Form, int Scale)> EnumerateScaleForms()
+  {
+    for (int scale = 1; scale < _scales.Length; scale++)
+    {
+      foreach (string form in _scales[scale][0])
+        yield return (form, scale);
+
+      foreach (string form in _scales[scale][1])
+        yield return (form, scale);
+    }
+  }
 }

@@ -71,6 +71,10 @@ public static class RussianNumberExtensions
     RussianCase grammaticalCase = RussianCase.Nominative) =>
     RussianOrdinalToWords.Convert(number, gender, grammaticalCase);
 
+  /// <summary>Разбирает количественное числительное, записанное словами, в число.</summary>
+  public static Result<long> ParseRussianNumber(this string? text) =>
+    RussianNumberParser.Parse(text);
+
   /// <summary>Записывает дату прописью на русском языке.</summary>
   public static Result<string> ToRussianWords(this DateOnly date, RussianCase dayCase = RussianCase.Nominative) =>
     RussianDateToWords.Convert(date, dayCase);
