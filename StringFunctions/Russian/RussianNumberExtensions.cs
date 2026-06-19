@@ -82,4 +82,8 @@ public static class RussianNumberExtensions
   /// <inheritdoc cref="ToRussianWords(DateOnly, RussianCase)"/>
   public static Result<string> ToRussianWords(this DateTime date, RussianCase dayCase = RussianCase.Nominative) =>
     RussianDateToWords.Convert(date, dayCase);
+
+  /// <summary>Записывает время прописью на русском языке («цифровой» формат).</summary>
+  public static Result<string> ToRussianWords(this TimeOnly time, RussianTimeZeroMinutes zeroMinutes = RussianTimeZeroMinutes.Omit) =>
+    RussianTimeToWords.Convert(time, zeroMinutes);
 }
