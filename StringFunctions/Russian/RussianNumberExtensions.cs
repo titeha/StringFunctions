@@ -49,4 +49,11 @@ public static class RussianNumberExtensions
   /// <inheritdoc cref="ToRussianWords(long, RussianCase, RussianGender)"/>
   public static string ToRussianWords(this int number, RussianCase grammaticalCase, RussianGender gender = RussianGender.Masculine) =>
     RussianNumberToWords.Convert(number, grammaticalCase, gender);
+
+  /// <summary>Записывает денежную сумму прописью (по умолчанию в рублях).</summary>
+  public static Result<string> ToRussianMoney(
+    this decimal amount,
+    RussianCurrency? currency = null,
+    RussianMinorFormat minorFormat = RussianMinorFormat.Words) =>
+    RussianMoneyToWords.Convert(amount, currency ?? RussianCurrency.Rubles, minorFormat);
 }
