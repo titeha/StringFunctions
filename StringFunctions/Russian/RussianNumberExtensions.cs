@@ -56,4 +56,26 @@ public static class RussianNumberExtensions
     RussianCurrency? currency = null,
     RussianMinorFormat minorFormat = RussianMinorFormat.Words) =>
     RussianMoneyToWords.Convert(amount, currency ?? RussianCurrency.Rubles, minorFormat);
+
+  /// <summary>Преобразует число в порядковое числительное словами на русском языке.</summary>
+  public static string ToRussianOrdinal(
+    this long number,
+    RussianGender gender = RussianGender.Masculine,
+    RussianCase grammaticalCase = RussianCase.Nominative) =>
+    RussianOrdinalToWords.Convert(number, gender, grammaticalCase);
+
+  /// <inheritdoc cref="ToRussianOrdinal(long, RussianGender, RussianCase)"/>
+  public static string ToRussianOrdinal(
+    this int number,
+    RussianGender gender = RussianGender.Masculine,
+    RussianCase grammaticalCase = RussianCase.Nominative) =>
+    RussianOrdinalToWords.Convert(number, gender, grammaticalCase);
+
+  /// <summary>Записывает дату прописью на русском языке.</summary>
+  public static Result<string> ToRussianWords(this DateOnly date, RussianCase dayCase = RussianCase.Nominative) =>
+    RussianDateToWords.Convert(date, dayCase);
+
+  /// <inheritdoc cref="ToRussianWords(DateOnly, RussianCase)"/>
+  public static Result<string> ToRussianWords(this DateTime date, RussianCase dayCase = RussianCase.Nominative) =>
+    RussianDateToWords.Convert(date, dayCase);
 }

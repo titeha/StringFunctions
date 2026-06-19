@@ -5,15 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <PackageId>Ti-Soft.StringFunctions</PackageId>
     <BaseOutputPath>..\bin\StringFunctions</BaseOutputPath>
-    <Version>2.3.0</Version>
+    <Version>2.4.0</Version>
     <Copyright>Artemy Sobolev</Copyright>
     <RepositoryUrl>https://github.com/titeha/StringFunctions</RepositoryUrl>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
     <TieredPGO>true</TieredPGO>
     <EnableSIMD>true</EnableSIMD>
-    <Description>Библиотека функций для работы со строками: проверка баланса скобок, нормализация строки, парсинг и форматирование диапазонов целых чисел, согласование существительных с числом, перевод чисел в слова (прописью), склонение числительных по падежам и запись денежной суммы прописью на русском языке.</Description>
-    <PackageTags>strings;text;normalization;braces;ranges;parser;formatter;russian;pluralization;plural;number-to-words;numbertowords;declension;cases;money;currency</PackageTags>
+    <Description>Библиотека функций для работы со строками: проверка баланса скобок, нормализация строки, парсинг и форматирование диапазонов целых чисел, согласование существительных с числом, перевод чисел в слова (прописью), склонение числительных по падежам, порядковые числительные, дата и денежная сумма прописью на русском языке.</Description>
+    <PackageTags>strings;text;normalization;braces;ranges;parser;formatter;russian;pluralization;plural;number-to-words;numbertowords;declension;cases;money;currency;ordinal;date</PackageTags>
     <PackageProjectUrl>https://github.com/titeha/StringFunctions</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
