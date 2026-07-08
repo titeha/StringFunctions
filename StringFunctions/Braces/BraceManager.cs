@@ -24,7 +24,7 @@ internal class BraceManager
   #endregion
 
   #region Свойство
-  public char[] BracesList => _bracesList.Distinct().Aggregate(string.Empty, (r, b) => string.Concat(r, b.ToString()), r => r.ToCharArray());
+  public char[] BracesList { get; }
   #endregion
 
   #region Конструкторы
@@ -37,6 +37,7 @@ internal class BraceManager
 
     _bracesList = _bracesList.Distinct().ToList();
     ValidateNoConflictingBraces();
+    BracesList = BuildBracesArray();
   }
 
   public BraceManager(params (char, char)[] bracesSymbols)
@@ -48,6 +49,7 @@ internal class BraceManager
 
     _bracesList = _bracesList.Distinct().ToList();
     ValidateNoConflictingBraces();
+    BracesList = BuildBracesArray();
   }
 
   public BraceManager(KnownBracesTypes bracesTypes, params (char, char)[] bracesSymbols)
@@ -60,6 +62,7 @@ internal class BraceManager
 
     _bracesList = _bracesList.Distinct().ToList();
     ValidateNoConflictingBraces();
+    BracesList = BuildBracesArray();
   }
   #endregion
 
@@ -97,6 +100,19 @@ internal class BraceManager
   public bool IsPair(char candidate, char checking) => _bracesList.Any(b => b.HasThisBrace(checking) && b.IsPair(candidate));
 
   public bool IsPaired(char candidate) => _bracesList.Single(v => v.HasThisBrace(candidate)).IsPaired;
+
+
+  private char[] BuildBracesArray()
+  {
+    var symbols = new List<char>(_bracesList.Count * 2);
+
+    foreach (Brace brace in _bracesList)
+      foreach (char symbol in brace)
+        if (!symbols.Contains(symbol))
+          symbols.Add(symbol);
+
+    return [.. symbols];
+  }
 
   // Гарантирует, что один и тот же символ не принадлежит двум разным парам.
   // Без этой проверки IsPaired (.Single) бросил бы InvalidOperationException

@@ -38,6 +38,7 @@ public static class RussianNumberParser
   }
 
   private const int _groupStartRank = 4;
+  private const ulong _longMinMagnitude = long.MaxValue + 1UL;
 
   private static readonly long[] _scalePow =
     [1L, 1_000L, 1_000_000L, 1_000_000_000L, 1_000_000_000_000L, 1_000_000_000_000_000L, 1_000_000_000_000_000_000L];
@@ -64,16 +65,16 @@ public static class RussianNumberParser
       return Result.Failure<long>("Строка не содержит числительного.");
 
     int index = 0;
-    long sign = 1;
+    bool negative = false;
 
     if (Normalize(tokens[0]) == _minus)
     {
-      sign = -1;
+      negative = true;
       index = 1;
     }
 
-    long result = 0;
-    long current = 0;
+    ulong result = 0;
+    ulong current = 0;
     int lastPlaceRank = _groupStartRank;
     long lastScale = long.MaxValue;
     bool sawValue = false;
@@ -102,7 +103,7 @@ public static class RussianNumberParser
             if (sawZero || lastPlaceRank <= entry.RequiredAbove)
               return Result.Failure<long>($"Недопустимый порядок слов рядом с '{tokens[index]}'.");
 
-            current = checked(current + entry.Value);
+            current = checked(current + (ulong)entry.Value);
             lastPlaceRank = entry.SetRank;
             sawValue = true;
             break;
@@ -111,8 +112,8 @@ public static class RussianNumberParser
             if (sawZero || entry.Multiplier >= lastScale)
               return Result.Failure<long>($"Недопустимый порядок разрядов рядом с '{tokens[index]}'.");
 
-            long groupValue = current == 0 ? 1 : current;
-            result = checked(result + groupValue * entry.Multiplier);
+            ulong groupValue = current == 0 ? 1UL : current;
+            result = checked(result + groupValue * (ulong)entry.Multiplier);
             lastScale = entry.Multiplier;
             current = 0;
             lastPlaceRank = _groupStartRank;
@@ -125,12 +126,32 @@ public static class RussianNumberParser
         return Result.Failure<long>("Строка не содержит числительного.");
 
       result = checked(result + current);
-      return Result.Success(sign * result);
+      return CompleteResult(result, negative);
     }
     catch (OverflowException)
     {
       return Result.Failure<long>("Число выходит за пределы диапазона Int64.");
     }
+  }
+
+
+  private static Result<long> CompleteResult(ulong magnitude, bool negative)
+  {
+    if (!negative)
+    {
+      if (magnitude > long.MaxValue)
+        return Result.Failure<long>("Число выходит за пределы диапазона Int64.");
+
+      return Result.Success((long)magnitude);
+    }
+
+    if (magnitude > _longMinMagnitude)
+      return Result.Failure<long>("Число выходит за пределы диапазона Int64.");
+
+    if (magnitude == _longMinMagnitude)
+      return Result.Success(long.MinValue);
+
+    return Result.Success(-(long)magnitude);
   }
 
   private static Dictionary<string, Entry> BuildVocabulary()

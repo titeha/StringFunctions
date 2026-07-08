@@ -49,12 +49,33 @@ public static class RussianDateToWords
     if (day is < 1 or > 31)
       return Result.Failure<string>($"День должен быть в диапазоне 1..31. Значение: {day}.");
 
+    if (!Enum.IsDefined(typeof(RussianCase), dayCase))
+      return Result.Failure<string>($"Недопустимый падеж дня. Значение: {(int)dayCase}.");
+
+    if (!IsValidDate(year, month, day))
+      return Result.Failure<string>($"Дата не существует. Значение: {year:D4}-{month:D2}-{day:D2}.");
+
     string dayWords = RussianOrdinalToWords.Convert(day, RussianGender.Neuter, dayCase);
     string monthWords = _monthsGenitive[month];
     string yearWords = RussianOrdinalToWords.Convert(year, RussianGender.Masculine, RussianCase.Genitive);
 
     return Result.Success($"{dayWords} {monthWords} {yearWords} года");
   }
+
+
+  private static bool IsValidDate(int year, int month, int day) =>
+    day <= GetDaysInMonth(year, month);
+
+  private static int GetDaysInMonth(int year, int month) =>
+    month switch
+    {
+      2 => IsLeapYear(year) ? 29 : 28,
+      4 or 6 or 9 or 11 => 30,
+      _ => 31
+    };
+
+  private static bool IsLeapYear(int year) =>
+    year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
 
   /// <summary>
   /// Записывает дату прописью по <see cref="DateOnly"/>.

@@ -53,6 +53,8 @@ public static class StringFunctions
     KnownBracesTypes bracesTypes,
     params (char, char)[] bracesSymbols)
   {
+    bracesSymbols ??= [];
+
     bool hasTypes = !bracesTypes.IsEmpty();
     bool hasSymbols = bracesSymbols.Length > 0;
 

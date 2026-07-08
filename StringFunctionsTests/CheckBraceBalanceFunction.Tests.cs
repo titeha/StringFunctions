@@ -205,4 +205,15 @@ public class CheckBraceBalanceFunctionTests
     Assert.False(isBalanced);
     Assert.Equal(_customSet, symbol);
   }
+
+  [Fact]
+  public void Check_balance_with_null_custom_symbols_Returns_failure_without_throwing()
+  {
+    const string checkString = "text";
+
+    string error = ParseFailure(checkString.IsBracesBalanced(KnownBracesTypes.Other, null!));
+
+    Assert.NotEmpty(error);
+  }
+
 }

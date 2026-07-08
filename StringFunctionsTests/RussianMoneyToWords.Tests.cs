@@ -82,7 +82,7 @@ public class RussianMoneyToWordsTests
     var result = RussianMoneyToWords.Convert(5, 150, RussianCurrency.Rubles);
 
     Assert.True(result.IsFailure);
-    Assert.False(string.IsNullOrWhiteSpace(result.Error));
+    Assert.False(string.IsNullOrWhiteSpace(result.Error!));
   }
 
   [Fact]
@@ -98,4 +98,23 @@ public class RussianMoneyToWordsTests
     Assert.Equal(
       "сто двадцать три рубля сорок пять копеек",
       Success(123.45m.ToRussianMoney()));
+
+  [Fact]
+  public void Convert_DecimalOverflow_ReturnsFailure()
+  {
+    var result = RussianMoneyToWords.Convert(decimal.MaxValue, RussianCurrency.Rubles);
+
+    Assert.True(result.IsFailure);
+    Assert.False(string.IsNullOrWhiteSpace(result.Error!));
+  }
+
+  [Fact]
+  public void Convert_InvalidMinorFormat_ReturnsFailure()
+  {
+    var result = RussianMoneyToWords.Convert(1, 0, RussianCurrency.Rubles, (RussianMinorFormat)999);
+
+    Assert.True(result.IsFailure);
+    Assert.Contains("формат", result.Error!, StringComparison.OrdinalIgnoreCase);
+  }
+
 }

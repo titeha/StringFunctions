@@ -63,4 +63,22 @@ public class RussianOrdinalToWordsTests
   [Fact]
   public void ToRussianOrdinal_Extension_Works() =>
     Assert.Equal("двадцать первый", 21.ToRussianOrdinal());
+
+  [Fact]
+  public void Convert_InvalidEnums_FallsBackWithoutThrowing()
+  {
+    Exception? exception = Record.Exception(() => RussianOrdinalToWords.Convert(1, (RussianGender)999, (RussianCase)999));
+
+    Assert.Null(exception);
+    Assert.Equal("первый", RussianOrdinalToWords.Convert(1, (RussianGender)999, (RussianCase)999));
+  }
+
+  [Fact]
+  public void Convert_LongMinValue_DoesNotThrow()
+  {
+    Exception? exception = Record.Exception(() => RussianOrdinalToWords.Convert(long.MinValue));
+
+    Assert.Null(exception);
+  }
+
 }

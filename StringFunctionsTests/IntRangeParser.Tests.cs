@@ -250,4 +250,54 @@ public class IntRangeParserTests
     List<int> actual = ParseSuccess("1, 2000000000", int.MaxValue);
     Assert.Equal([1, 2000000000], actual);
   }
+
+  [Fact]
+  public void Parse_SingleIntMaxValue_ReturnsSingleValue()
+  {
+    List<int> actual = ParseSuccess(int.MaxValue.ToString(), int.MaxValue);
+    Assert.Equal([int.MaxValue], actual);
+  }
+
+  [Fact]
+  public void Parse_IntMaxValueWithAnotherToken_ReturnsSortedUniqueValues()
+  {
+    List<int> actual = ParseSuccess($"1,{int.MaxValue}", int.MaxValue);
+    Assert.Equal([1, int.MaxValue], actual);
+  }
+
+  [Fact]
+  public void Parse_DuplicateIntMaxValue_DeduplicatesWithoutOverflow()
+  {
+    List<int> actual = ParseSuccess($"{int.MaxValue},{int.MaxValue}", int.MaxValue);
+    Assert.Equal([int.MaxValue], actual);
+  }
+
+  [Fact]
+  public void Parse_ManySparseTokensWithIntMaxValue_UsesSegmentedPathWithoutOverflow()
+  {
+    string source = string.Join(",", Enumerable.Range(1, 65));
+
+    List<int> actual = ParseSuccess(source, int.MaxValue);
+
+    Assert.Equal(Enumerable.Range(1, 65), actual);
+  }
+
+  [Fact]
+  public void Parse_MaxResultCountExceeded_ReturnsFailure()
+  {
+    var result = IntRangeParser.Parse("1-5", 10, maxResultCount: 3);
+
+    Assert.True(result.IsFailure);
+    Assert.Contains("maxResultCount", result.Error!, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
+  public void Parse_MaxResultCountEqualToCardinality_Succeeds()
+  {
+    var result = IntRangeParser.Parse("1-5", 10, maxResultCount: 5);
+
+    Assert.True(result.IsSuccess, result.IsFailure ? result.Error : string.Empty);
+    Assert.Equal([1, 2, 3, 4, 5], result.Value);
+  }
+
 }

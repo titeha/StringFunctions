@@ -25,6 +25,7 @@ namespace StringFunctions;
 public static class IntRangeFormatter
 {
   private const string _delimiters = " ,.;_:#!|\\/'\"";
+  private const int _maxInitialBufferCapacity = 4_096;
 
   /// <summary>
   /// Форматирует последовательность целых чисел в строку диапазонов.
@@ -122,7 +123,7 @@ public static class IntRangeFormatter
   {
     int capacity = 0;
     if (values.TryGetNonEnumeratedCount(out int count) && count > 0)
-      capacity = count;
+      capacity = Math.Min(count, _maxInitialBufferCapacity);
 
     var buffer = capacity > 0 ? new List<int>(capacity) : [];
 

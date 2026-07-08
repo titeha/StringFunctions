@@ -24,6 +24,12 @@ public sealed class RussianCurrency
     if (minorUnitsPerMajor < 1)
       throw new ArgumentOutOfRangeException(nameof(minorUnitsPerMajor), "Число разменных единиц должно быть не меньше 1.");
 
+    if (!major.IsValid)
+      throw new ArgumentException("Описание основной денежной единицы некорректно.", nameof(major));
+
+    if (!minor.IsValid)
+      throw new ArgumentException("Описание разменной денежной единицы некорректно.", nameof(minor));
+
     Major = major;
     Minor = minor;
     MinorAbbreviation = minorAbbreviation ?? throw new ArgumentNullException(nameof(minorAbbreviation));

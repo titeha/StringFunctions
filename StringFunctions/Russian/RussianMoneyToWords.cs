@@ -40,6 +40,9 @@ public static class RussianMoneyToWords
     if (currency is null)
       return Result.Failure<string>("Валюта не может быть null.");
 
+    if (!Enum.IsDefined(typeof(RussianMinorFormat), minorFormat))
+      return Result.Failure<string>($"Недопустимый формат разменной части. Значение: {(int)minorFormat}.");
+
     if (minor < 0 || minor >= currency.MinorUnitsPerMajor)
       return Result.Failure<string>(
         $"Разменная часть должна быть в диапазоне 0..{currency.MinorUnitsPerMajor - 1}. Значение: {minor}.");
@@ -62,7 +65,19 @@ public static class RussianMoneyToWords
     if (currency is null)
       return Result.Failure<string>("Валюта не может быть null.");
 
-    decimal scaled = Math.Round(amount * currency.MinorUnitsPerMajor, MidpointRounding.AwayFromZero);
+    if (!Enum.IsDefined(typeof(RussianMinorFormat), minorFormat))
+      return Result.Failure<string>($"Недопустимый формат разменной части. Значение: {(int)minorFormat}.");
+
+    decimal scaled;
+
+    try
+    {
+      scaled = Math.Round(amount * currency.MinorUnitsPerMajor, MidpointRounding.AwayFromZero);
+    }
+    catch (OverflowException)
+    {
+      return Result.Failure<string>("Сумма выходит за пределы поддерживаемого диапазона.");
+    }
 
     if (scaled < long.MinValue || scaled > long.MaxValue)
       return Result.Failure<string>("Сумма выходит за пределы поддерживаемого диапазона.");

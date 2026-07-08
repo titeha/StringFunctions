@@ -53,6 +53,28 @@ public class RussianDateToWordsTests
     var result = RussianDateToWords.Convert(year, month, day);
 
     Assert.True(result.IsFailure);
-    Assert.False(string.IsNullOrWhiteSpace(result.Error));
+    Assert.False(string.IsNullOrWhiteSpace(result.Error!));
   }
+
+  [Theory]
+  [InlineData(2026, 2, 29)]
+  [InlineData(2026, 2, 31)]
+  [InlineData(2026, 4, 31)]
+  public void Convert_NonexistentDate_ReturnsFailure(int year, int month, int day)
+  {
+    var result = RussianDateToWords.Convert(year, month, day);
+
+    Assert.True(result.IsFailure);
+    Assert.Contains("Дата не существует", result.Error!, StringComparison.OrdinalIgnoreCase);
+  }
+
+  [Fact]
+  public void Convert_InvalidDayCase_ReturnsFailure()
+  {
+    var result = RussianDateToWords.Convert(2026, 6, 19, (RussianCase)999);
+
+    Assert.True(result.IsFailure);
+    Assert.Contains("падеж", result.Error!, StringComparison.OrdinalIgnoreCase);
+  }
+
 }

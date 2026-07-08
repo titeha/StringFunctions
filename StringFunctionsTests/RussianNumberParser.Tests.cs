@@ -56,7 +56,7 @@ public class RussianNumberParserTests
     var result = RussianNumberParser.Parse(text);
 
     Assert.True(result.IsFailure);
-    Assert.False(string.IsNullOrWhiteSpace(result.Error));
+    Assert.False(string.IsNullOrWhiteSpace(result.Error!));
   }
 
   [Fact]
@@ -88,4 +88,13 @@ public class RussianNumberParserTests
     string words = RussianNumberToWords.Convert(-number);
     Assert.Equal(-number, Success(RussianNumberParser.Parse(words)));
   }
+
+  [Fact]
+  public void RoundTrip_LongMinValue_RecoversOriginal()
+  {
+    string words = RussianNumberToWords.Convert(long.MinValue);
+
+    Assert.Equal(long.MinValue, Success(RussianNumberParser.Parse(words)));
+  }
+
 }

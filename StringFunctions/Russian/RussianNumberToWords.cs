@@ -167,7 +167,8 @@ public static class RussianNumberToWords
   /// <returns>Число, записанное словами в указанном падеже.</returns>
   public static string Convert(long number, RussianCase grammaticalCase, RussianGender gender = RussianGender.Masculine)
   {
-    int caseIndex = (int)grammaticalCase;
+    int caseIndex = GetCaseIndexOrDefault(grammaticalCase);
+    gender = NormalizeGender(gender);
 
     if (number == 0)
       return _zero[caseIndex];
@@ -184,6 +185,30 @@ public static class RussianNumberToWords
 
     return string.Join(' ', words);
   }
+
+
+  internal static string ConvertMagnitude(ulong magnitude, RussianCase grammaticalCase, RussianGender gender = RussianGender.Masculine)
+  {
+    int caseIndex = GetCaseIndexOrDefault(grammaticalCase);
+    gender = NormalizeGender(gender);
+
+    if (magnitude == 0)
+      return _zero[caseIndex];
+
+    var words = new List<string>();
+    AppendMagnitude(words, magnitude, caseIndex, gender);
+    return string.Join(' ', words);
+  }
+
+  internal static int GetCaseIndexOrDefault(RussianCase grammaticalCase) =>
+    Enum.IsDefined(typeof(RussianCase), grammaticalCase)
+      ? (int)grammaticalCase
+      : (int)RussianCase.Nominative;
+
+  internal static RussianGender NormalizeGender(RussianGender gender) =>
+    Enum.IsDefined(typeof(RussianGender), gender)
+      ? gender
+      : RussianGender.Masculine;
 
   private static void AppendMagnitude(List<string> words, ulong magnitude, int caseIndex, RussianGender unitsGender)
   {

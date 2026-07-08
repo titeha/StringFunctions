@@ -78,7 +78,8 @@ public static class RussianOrdinalToWords
     RussianGender gender = RussianGender.Masculine,
     RussianCase grammaticalCase = RussianCase.Nominative)
   {
-    int caseIndex = (int)grammaticalCase;
+    int caseIndex = RussianNumberToWords.GetCaseIndexOrDefault(grammaticalCase);
+    gender = RussianNumberToWords.NormalizeGender(gender);
 
     if (number == 0)
       return DeclineOrdinal("нулевой", gender, caseIndex);
@@ -94,7 +95,10 @@ public static class RussianOrdinalToWords
       parts.Add(_minus);
 
     if (cardinalPrefixValue > 0)
-      parts.Add(FixLeadingOneThousand(RussianNumberToWords.Convert((long)cardinalPrefixValue)));
+      parts.Add(FixLeadingOneThousand(RussianNumberToWords.ConvertMagnitude(
+        cardinalPrefixValue,
+        RussianCase.Nominative,
+        RussianGender.Masculine)));
 
     parts.Add(DeclineOrdinal(ordinalMasculine, gender, caseIndex));
 

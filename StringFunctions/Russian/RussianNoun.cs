@@ -23,6 +23,10 @@ public readonly struct RussianNoun
     One = one ?? throw new ArgumentNullException(nameof(one));
     Few = few ?? throw new ArgumentNullException(nameof(few));
     Many = many ?? throw new ArgumentNullException(nameof(many));
+
+    if (!Enum.IsDefined(typeof(RussianGender), gender))
+      throw new ArgumentOutOfRangeException(nameof(gender), "Недопустимый грамматический род.");
+
     Gender = gender;
   }
 
@@ -37,6 +41,9 @@ public readonly struct RussianNoun
 
   /// <summary>Грамматический род существительного.</summary>
   public RussianGender Gender { get; }
+
+  internal bool IsValid =>
+    One is not null && Few is not null && Many is not null && Enum.IsDefined(typeof(RussianGender), Gender);
 
   /// <summary>Возвращает форму, согласованную с числом <paramref name="count"/>.</summary>
   public string Form(long count) =>

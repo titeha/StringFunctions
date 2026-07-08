@@ -67,4 +67,14 @@ public class RussianNumberToWordsTests
       "минус девять квинтиллионов двести двадцать три квадриллиона триста семьдесят два триллиона " +
       "тридцать шесть миллиардов восемьсот пятьдесят четыре миллиона семьсот семьдесят пять тысяч восемьсот восемь",
       RussianNumberToWords.Convert(long.MinValue));
+
+  [Fact]
+  public void Convert_InvalidEnums_FallsBackWithoutThrowing()
+  {
+    Exception? exception = Record.Exception(() => RussianNumberToWords.Convert(1, (RussianCase)999, (RussianGender)999));
+
+    Assert.Null(exception);
+    Assert.Equal("один", RussianNumberToWords.Convert(1, (RussianCase)999, (RussianGender)999));
+  }
+
 }

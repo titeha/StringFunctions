@@ -37,6 +37,9 @@ public static class IntRangeParser
   private const string _resultTooLargeError =
     "Результирующий набор слишком велик для размещения в списке (превышен Array.MaxLength).";
 
+  private const string _resultCountLimitError =
+    "Результирующий набор содержит больше значений, чем разрешено параметром maxResultCount.";
+
   private const int _bitsPerWord = 64;
   private const int _wordShift = 6;
   private const int _wordBitMask = _bitsPerWord - 1;
@@ -106,13 +109,29 @@ public static class IntRangeParser
   /// возвращаются через <see cref="Result{T}"/>.
   /// </para>
   /// </remarks>
-  public static Result<List<int>> Parse(string? rangeSource, int maxRangeValue)
+  public static Result<List<int>> Parse(string? rangeSource, int maxRangeValue) =>
+    ParseCore(rangeSource, maxRangeValue, maxResultCount: null);
+
+  /// <summary>
+  /// Разбирает строку с числами и диапазонами целых чисел с ограничением максимального размера результата.
+  /// </summary>
+  /// <param name="rangeSource">Исходная строка с токенами диапазонов.</param>
+  /// <param name="maxRangeValue">Максимально допустимое значение правой границы. Должно быть не меньше <c>0</c>.</param>
+  /// <param name="maxResultCount">Максимально допустимое число значений в результирующем списке.</param>
+  /// <returns><see cref="Result{T}"/> с результатом разбора либо ошибкой валидации.</returns>
+  public static Result<List<int>> Parse(string? rangeSource, int maxRangeValue, int maxResultCount) =>
+    ParseCore(rangeSource, maxRangeValue, maxResultCount);
+
+  private static Result<List<int>> ParseCore(string? rangeSource, int maxRangeValue, int? maxResultCount)
   {
     if (rangeSource is null)
       return Result.Failure<List<int>>("Исходная строка диапазона не может быть null.");
 
     if (maxRangeValue < 0)
       return Result.Failure<List<int>>("Максимальное значение диапазона должно быть не меньше 0.");
+
+    if (maxResultCount is < 0)
+      return Result.Failure<List<int>>("Максимальный размер результата должен быть не меньше 0.");
 
     rangeSource = NormalizeSpacesAroundDash(rangeSource);
 
@@ -124,11 +143,11 @@ public static class IntRangeParser
 
     // 1. One token -> direct fast path.
     if (tokenCount == 1)
-      return ParseSingleTokenFastPath(source, maxRangeValue);
+      return ParseSingleTokenFastPath(source, maxRangeValue, maxResultCount);
 
     // 2. Huge maxRangeValue + a small number of tokens -> adaptive path.
     if (maxRangeValue > _largeRangeAdaptiveThreshold && tokenCount <= _adaptiveTokenThreshold)
-      return ParseAdaptiveLargeRange(source, tokenCount, maxRangeValue);
+      return ParseAdaptiveLargeRange(source, tokenCount, maxRangeValue, maxResultCount);
 
     // 3. Baseline streaming path.
     IBitSet bitSet = CreateBitSet(maxRangeValue);
@@ -142,22 +161,39 @@ public static class IntRangeParser
         return Result.Failure<List<int>>(tokenResult.Error!);
     }
 
-    if ((uint)bitSet.Count > Array.MaxLength)
+    if (bitSet.Count > Array.MaxLength)
       return Result.Failure<List<int>>(_resultTooLargeError);
+
+    if (IsResultCountLimitExceeded(bitSet.Count, maxResultCount))
+      return Result.Failure<List<int>>(_resultCountLimitError);
 
     return Result.Success(bitSet.ToList());
   }
 
   private static IBitSet CreateBitSet(int maxRangeValue)
   {
-    int requiredWords = (maxRangeValue + _wordBitMask) >> _wordShift;
+    long requiredWords = ((long)maxRangeValue + _wordBitMask) >> _wordShift;
 
     return requiredWords <= _denseWordsThreshold
       ? new DenseBitSet64(maxRangeValue)
       : new SegmentedBitSet64(maxRangeValue);
   }
 
-  private static Result<List<int>> ParseSingleTokenFastPath(ReadOnlySpan<char> source, int maxRangeValue)
+  private static int CalculateWordCount(int maxAllowedValue)
+  {
+    if (maxAllowedValue <= 0)
+      return 0;
+
+    return checked((int)(((long)maxAllowedValue + _wordBitMask) >> _wordShift));
+  }
+
+  private static long GetCardinality(int start, int end) =>
+    (long)end - start + 1;
+
+  private static bool IsResultCountLimitExceeded(long count, int? maxResultCount) =>
+    maxResultCount.HasValue && count > maxResultCount.Value;
+
+  private static Result<List<int>> ParseSingleTokenFastPath(ReadOnlySpan<char> source, int maxRangeValue, int? maxResultCount)
   {
     int position = 0;
 
@@ -171,8 +207,13 @@ public static class IntRangeParser
 
     RangeBounds bounds = boundsResult.Value;
 
-    if ((long)bounds.End - bounds.Start + 1 > Array.MaxLength)
+    long cardinality = GetCardinality(bounds.Start, bounds.End);
+
+    if (cardinality > Array.MaxLength)
       return Result.Failure<List<int>>(_resultTooLargeError);
+
+    if (IsResultCountLimitExceeded(cardinality, maxResultCount))
+      return Result.Failure<List<int>>(_resultCountLimitError);
 
     return Result.Success(MaterializeRange(bounds.Start, bounds.End));
   }
@@ -180,7 +221,8 @@ public static class IntRangeParser
   private static Result<List<int>> ParseAdaptiveLargeRange(
     ReadOnlySpan<char> source,
     int tokenCount,
-    int maxRangeValue)
+    int maxRangeValue,
+    int? maxResultCount)
   {
     var ranges = new List<RangeBounds>(tokenCount);
 
@@ -208,6 +250,9 @@ public static class IntRangeParser
 
     if (mergeInfo.Cardinality > Array.MaxLength)
       return Result.Failure<List<int>>(_resultTooLargeError);
+
+    if (IsResultCountLimitExceeded(mergeInfo.Cardinality, maxResultCount))
+      return Result.Failure<List<int>>(_resultCountLimitError);
 
     // One merged range -> direct materialization.
     if (mergeInfo.Count == 1)
@@ -428,7 +473,7 @@ public static class IntRangeParser
     {
       RangeBounds next = ranges[readIndex];
 
-      if (next.Start <= currentEnd + 1)
+      if (next.Start <= (long)currentEnd + 1)
       {
         if (next.End > currentEnd)
           currentEnd = next.End;
@@ -437,32 +482,32 @@ public static class IntRangeParser
       }
 
       ranges[writeIndex++] = new RangeBounds(currentStart, currentEnd);
-      cardinality += (long)currentEnd - currentStart + 1;
+      cardinality += GetCardinality(currentStart, currentEnd);
 
       currentStart = next.Start;
       currentEnd = next.End;
     }
 
     ranges[writeIndex++] = new RangeBounds(currentStart, currentEnd);
-    cardinality += (long)currentEnd - currentStart + 1;
+    cardinality += GetCardinality(currentStart, currentEnd);
 
     return new MergeInfo(writeIndex, cardinality);
   }
 
   private static List<int> MaterializeRange(int start, int end)
   {
-    int count = checked(end - start + 1);
+    int count = checked((int)GetCardinality(start, end));
     var result = new List<int>(count);
 
 #if NET8_0_OR_GREATER
     CollectionsMarshal.SetCount(result, count);
     Span<int> destination = CollectionsMarshal.AsSpan(result);
 
-    for (int i = 0; i < count; i++)
-      destination[i] = start + i;
+    for (int offset = 0; offset < count; offset++)
+      destination[offset] = start + offset;
 #else
-    for (int value = start; value <= end; value++)
-      result.Add(value);
+    for (int offset = 0; offset < count; offset++)
+      result.Add(start + offset);
 #endif
 
     return result;
@@ -482,17 +527,19 @@ public static class IntRangeParser
     for (int i = 0; i < mergeInfo.Count; i++)
     {
       RangeBounds bounds = ranges[i];
+      int count = checked((int)GetCardinality(bounds.Start, bounds.End));
 
-      for (int value = bounds.Start; value <= bounds.End; value++)
-        destination[written++] = value;
+      for (int offset = 0; offset < count; offset++)
+        destination[written++] = bounds.Start + offset;
     }
 #else
     for (int i = 0; i < mergeInfo.Count; i++)
     {
       RangeBounds bounds = ranges[i];
+      int count = checked((int)GetCardinality(bounds.Start, bounds.End));
 
-      for (int value = bounds.Start; value <= bounds.End; value++)
-        result.Add(value);
+      for (int offset = 0; offset < count; offset++)
+        result.Add(bounds.Start + offset);
     }
 #endif
 
@@ -613,7 +660,7 @@ public static class IntRangeParser
 
   private interface IBitSet
   {
-    int Count { get; }
+    long Count { get; }
 
     void Set(int value);
 
@@ -624,14 +671,14 @@ public static class IntRangeParser
 
   private sealed class DenseBitSet64(int maxAllowedValue) : IBitSet
   {
-    private readonly ulong[] _words = new ulong[(maxAllowedValue + _wordBitMask) >> _wordShift];
+    private readonly ulong[] _words = new ulong[CalculateWordCount(maxAllowedValue)];
 
-    private int _count;
+    private long _count;
     private int _minValueSet = int.MaxValue;
     private int _maxValueSet;
     private bool _hasZero;
 
-    public int Count => _count;
+    public long Count => _count;
 
     public void Set(int value)
     {
@@ -713,8 +760,9 @@ public static class IntRangeParser
       if (_count == 0)
         return [];
 
-      int positiveCount = _count - (_hasZero ? 1 : 0);
-      var result = new List<int>(_count);
+      long positiveCount = _count - (_hasZero ? 1 : 0);
+      int resultCount = checked((int)_count);
+      var result = new List<int>(resultCount);
 
       if (positiveCount == 0)
       {
@@ -730,7 +778,7 @@ public static class IntRangeParser
       int endWordIndex = endBitIndex >> _wordShift;
 
 #if NET8_0_OR_GREATER
-      CollectionsMarshal.SetCount(result, _count);
+      CollectionsMarshal.SetCount(result, resultCount);
       Span<int> destination = CollectionsMarshal.AsSpan(result);
 
       int written = 0;
@@ -740,7 +788,7 @@ public static class IntRangeParser
 
       written += WriteWordsToSpan(startWordIndex, endWordIndex, startBitIndex, endBitIndex, destination[written..]);
 
-      if (written != _count)
+      if (written != resultCount)
         CollectionsMarshal.SetCount(result, written);
 #else
       if (_hasZero)
@@ -846,12 +894,12 @@ public static class IntRangeParser
     private readonly int _maxAllowedValue;
     private readonly ulong[][] _segments;
 
-    private int _count;
+    private long _count;
     private int _minValueSet = int.MaxValue;
     private int _maxValueSet;
     private bool _hasZero;
 
-    public int Count => _count;
+    public long Count => _count;
 
     public SegmentedBitSet64(int maxAllowedValue)
     {
@@ -944,8 +992,9 @@ public static class IntRangeParser
       if (_count == 0)
         return [];
 
-      int positiveCount = _count - (_hasZero ? 1 : 0);
-      var result = new List<int>(_count);
+      long positiveCount = _count - (_hasZero ? 1 : 0);
+      int resultCount = checked((int)_count);
+      var result = new List<int>(resultCount);
 
       if (positiveCount == 0)
       {
@@ -961,7 +1010,7 @@ public static class IntRangeParser
       int endSegmentIndex = endBitIndex >> _segmentShift;
 
 #if NET8_0_OR_GREATER
-      CollectionsMarshal.SetCount(result, _count);
+      CollectionsMarshal.SetCount(result, resultCount);
       Span<int> destination = CollectionsMarshal.AsSpan(result);
 
       int written = 0;
@@ -991,7 +1040,7 @@ public static class IntRangeParser
           destination[written..]);
       }
 
-      if (written != _count)
+      if (written != resultCount)
         CollectionsMarshal.SetCount(result, written);
 #else
       if (_hasZero)
