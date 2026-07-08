@@ -23,7 +23,6 @@ public static class StringHelperExtensions
   private static readonly string _openingSymbols = LeftBraces + LeftQuotes;
   private static readonly string _closingSymbols = RightQuotes + RightBraces;
   private static readonly string _allSpecialSymbols = string.Concat(CommonSpecialSymbols, OtherSpecialSymbols);
-  private static readonly string _fullDelimitersList = string.Concat(_openingSymbols, Punctuation, _closingSymbols, _allSpecialSymbols) + _whitespace;
   private static readonly string _punctuationClosingSpecialSymbols = string.Concat(Punctuation, _closingSymbols, _allSpecialSymbols);
   private static readonly string _punctuationWhitespace = Punctuation + _whitespace;
   private static readonly string _rightBracesAndRightQuotes = RightBraces + RightQuotes;
@@ -39,7 +38,8 @@ public static class StringHelperExtensions
   /// </returns>
   /// <remarks>
   /// Пустая строка и строка, состоящая только из пробельных символов,
-  /// нормализуются в пустую строку.
+  /// нормализуются в пустую строку. Внутри непустой строки любые пробельные
+  /// символы приводятся к обычному пробелу.
   /// </remarks>
   public static Result<string> NormalizeString(this string? source)
   {
@@ -55,13 +55,16 @@ public static class StringHelperExtensions
   private static string NormalizeStringCore(string source)
   {
     ReadOnlySpan<char> text = source.AsSpan().Trim();
+
     if (text.IsEmpty)
       return string.Empty;
 
     var normalized = new StringBuilder(text.Length);
 
-    foreach (char current in text)
+    foreach (char rawCurrent in text)
     {
+      char current = char.IsWhiteSpace(rawCurrent) ? _whitespace : rawCurrent;
+
       // Убираем ведущие закрывающие/пунктуационные/спецсимволы.
       if (normalized.Length == 0)
       {
@@ -113,20 +116,21 @@ public static class StringHelperExtensions
   /// </summary>
   /// <param name="delimiters">Строка, содержащая набор символов-разделителей.</param>
   /// <param name="source">Проверяемый символ.</param>
-  /// <returns><see langword="true"/>, если символ найден в строке разделителей; иначе — <see langword="false"/>.</returns>
-  public static bool IsDelimiter(this string delimiters, char source) => delimiters.IndexOf(source) >= 0;
+  /// <returns><c>true</c>, если символ найден в строке разделителей; иначе — <c>false</c>.</returns>
+  public static bool IsDelimiter(this string? delimiters, char source) =>
+    !string.IsNullOrEmpty(delimiters) && delimiters.IndexOf(source) >= 0;
 
   /// <summary>
-  /// Проверяет, является ли строка <c>null</c> или пустой.
+  /// Проверяет, является ли строка null или пустой.
   /// </summary>
   /// <param name="source">Проверяемая строка.</param>
-  /// <returns><see langword="true"/>, если строка равна <c>null</c> или пуста; иначе — <see langword="false"/>.</returns>
+  /// <returns><c>true</c>, если строка равна null или пуста; иначе — <c>false</c>.</returns>
   public static bool IsNullOrEmpty(this string? source) => string.IsNullOrEmpty(source);
 
   /// <summary>
-  /// Проверяет, является ли строка <c>null</c>, пустой или состоящей только из пробельных символов.
+  /// Проверяет, является ли строка null, пустой или состоящей только из пробельных символов.
   /// </summary>
   /// <param name="source">Проверяемая строка.</param>
-  /// <returns><see langword="true"/>, если строка равна <c>null</c>, пуста или состоит только из пробелов; иначе — <see langword="false"/>.</returns>
+  /// <returns><c>true</c>, если строка равна null, пуста или состоит только из пробелов; иначе — <c>false</c>.</returns>
   public static bool IsNullOrWhiteSpace(this string? source) => string.IsNullOrWhiteSpace(source);
 }

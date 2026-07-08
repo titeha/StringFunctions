@@ -32,8 +32,6 @@ namespace StringFunctions;
 /// </remarks>
 public static class IntRangeParser
 {
-  private const string _delimiters = " ,.;_:#!|\\/'\"";
-
   private const string _resultTooLargeError =
     "Результирующий набор слишком велик для размещения в списке (превышен Array.MaxLength).";
 
@@ -117,8 +115,14 @@ public static class IntRangeParser
   /// </summary>
   /// <param name="rangeSource">Исходная строка с токенами диапазонов.</param>
   /// <param name="maxRangeValue">Максимально допустимое значение правой границы. Должно быть не меньше <c>0</c>.</param>
-  /// <param name="maxResultCount">Максимально допустимое число значений в результирующем списке.</param>
+  /// <param name="maxResultCount">
+  /// Максимально допустимое число значений в результирующем списке. Значение должно быть не меньше <c>0</c>.
+  /// </param>
   /// <returns><see cref="Result{T}"/> с результатом разбора либо ошибкой валидации.</returns>
+  /// <remarks>
+  /// Перегрузка предназначена для сценариев с недоверенным вводом, где нужно ограничить
+  /// потребление памяти при материализации результата.
+  /// </remarks>
   public static Result<List<int>> Parse(string? rangeSource, int maxRangeValue, int maxResultCount) =>
     ParseCore(rangeSource, maxRangeValue, maxResultCount);
 
@@ -155,7 +159,13 @@ public static class IntRangeParser
     int position = 0;
     for (int tokenIndex = 0; TryReadNextToken(source, ref position, out ReadOnlySpan<char> token); tokenIndex++)
     {
-      Result tokenResult = ParseTokenIntoBitSet(token, tokenIndex, tokenCount, maxRangeValue, bitSet);
+      Result tokenResult = ParseTokenIntoBitSet(
+        token,
+        tokenIndex,
+        tokenCount,
+        maxRangeValue,
+        bitSet,
+        maxResultCount);
 
       if (tokenResult.IsFailure)
         return Result.Failure<List<int>>(tokenResult.Error!);
@@ -192,6 +202,14 @@ public static class IntRangeParser
 
   private static bool IsResultCountLimitExceeded(long count, int? maxResultCount) =>
     maxResultCount.HasValue && count > maxResultCount.Value;
+
+  private static Result EnsureRangeFitsResultLimit(RangeBounds bounds, int? maxResultCount)
+  {
+    if (IsResultCountLimitExceeded(GetCardinality(bounds.Start, bounds.End), maxResultCount))
+      return Result.Failure(_resultCountLimitError);
+
+    return Result.Success();
+  }
 
   private static Result<List<int>> ParseSingleTokenFastPath(ReadOnlySpan<char> source, int maxRangeValue, int? maxResultCount)
   {
@@ -234,7 +252,13 @@ public static class IntRangeParser
       if (boundsResult.IsFailure)
         return Result.Failure<List<int>>(boundsResult.Error!);
 
-      ranges.Add(boundsResult.Value);
+      RangeBounds bounds = boundsResult.Value;
+      Result rangeLimitResult = EnsureRangeFitsResultLimit(bounds, maxResultCount);
+
+      if (rangeLimitResult.IsFailure)
+        return Result.Failure<List<int>>(rangeLimitResult.Error!);
+
+      ranges.Add(bounds);
     }
 
     if (ranges.Count == 0)
@@ -282,7 +306,8 @@ public static class IntRangeParser
     int tokenIndex,
     int tokenCount,
     int maxRangeValue,
-    IBitSet bitSet)
+    IBitSet bitSet,
+    int? maxResultCount)
   {
     Result<RangeBounds> boundsResult = ParseTokenBounds(token, tokenIndex, tokenCount, maxRangeValue);
 
@@ -290,11 +315,18 @@ public static class IntRangeParser
       return Result.Failure(boundsResult.Error!);
 
     RangeBounds bounds = boundsResult.Value;
+    Result rangeLimitResult = EnsureRangeFitsResultLimit(bounds, maxResultCount);
+
+    if (rangeLimitResult.IsFailure)
+      return Result.Failure(rangeLimitResult.Error!);
 
     if (bounds.Start == bounds.End)
       bitSet.Set(bounds.Start);
     else
       bitSet.SetRange(bounds.Start, bounds.End);
+
+    if (IsResultCountLimitExceeded(bitSet.Count, maxResultCount))
+      return Result.Failure(_resultCountLimitError);
 
     return Result.Success();
   }
@@ -473,7 +505,7 @@ public static class IntRangeParser
     {
       RangeBounds next = ranges[readIndex];
 
-      if (next.Start <= (long)currentEnd + 1)
+      if ((long)next.Start <= (long)currentEnd + 1)
       {
         if (next.End > currentEnd)
           currentEnd = next.End;
@@ -618,7 +650,9 @@ public static class IntRangeParser
   }
 
   [MethodImpl(MethodImplOptions.AggressiveInlining)]
-  private static bool IsDelimiter(char ch) => _delimiters.Contains(ch);
+  private static bool IsDelimiter(char ch) =>
+    ch is ' ' or ',' or '.' or ';' or '_' or ':' or '#' or '!' or '|'
+      or '\\' or '/' or '\'' or '"';
 
   [MethodImpl(MethodImplOptions.AggressiveInlining)]
   private static ulong LowBitsMask(int bitCount) =>

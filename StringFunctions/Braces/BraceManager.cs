@@ -1,6 +1,4 @@
-﻿using static StringFunctions.Braces.KnownBracesTypes;
-
-namespace StringFunctions.Braces;
+﻿namespace StringFunctions.Braces;
 
 internal class BraceManager
 {
@@ -20,7 +18,8 @@ internal class BraceManager
   private readonly static Brace _handWriteQuotas = new(('“', '”'));
   private readonly static Brace _tilda = new(('~', '~'));
 
-  private readonly List<Brace> _bracesList = new();
+  private List<Brace> _bracesList = [];
+  private readonly Dictionary<char, Brace> _braceBySymbol;
   #endregion
 
   #region Свойство
@@ -34,35 +33,35 @@ internal class BraceManager
       ThrowArgumentException();
 
     AddCommonBracesPair(bracesTypes);
+    NormalizeAndValidateBraces();
 
-    _bracesList = _bracesList.Distinct().ToList();
-    ValidateNoConflictingBraces();
     BracesList = BuildBracesArray();
+    _braceBySymbol = BuildBraceLookup();
   }
 
   public BraceManager(params (char, char)[] bracesSymbols)
   {
-    if (bracesSymbols.Length == 0)
+    if (bracesSymbols is null || bracesSymbols.Length == 0)
       ThrowArgumentException();
 
     AddCustomBracesPair(bracesSymbols);
+    NormalizeAndValidateBraces();
 
-    _bracesList = _bracesList.Distinct().ToList();
-    ValidateNoConflictingBraces();
     BracesList = BuildBracesArray();
+    _braceBySymbol = BuildBraceLookup();
   }
 
   public BraceManager(KnownBracesTypes bracesTypes, params (char, char)[] bracesSymbols)
   {
-    if (bracesTypes.IsEmpty() || bracesSymbols.Length == 0)
+    if (bracesTypes.IsEmpty() || bracesSymbols is null || bracesSymbols.Length == 0)
       ThrowArgumentException();
 
     AddCustomBracesPair(bracesSymbols);
     AddCommonBracesPair(bracesTypes);
+    NormalizeAndValidateBraces();
 
-    _bracesList = _bracesList.Distinct().ToList();
-    ValidateNoConflictingBraces();
     BracesList = BuildBracesArray();
+    _braceBySymbol = BuildBraceLookup();
   }
   #endregion
 
@@ -91,31 +90,51 @@ internal class BraceManager
 
   private void AddCustomBracesPair(params (char, char)[] bracesSymbols)
   {
-    for (int i = 0, _count = bracesSymbols.Length; i < _count; i++)
+    for (int i = 0, count = bracesSymbols.Length; i < count; i++)
       _bracesList.Add(new Brace(bracesSymbols[i]));
   }
 
-  public bool IsOpening(char candidate) => _bracesList.Any(b => b.IsOpening(candidate));
+  public bool IsOpening(char candidate) =>
+    _braceBySymbol.TryGetValue(candidate, out Brace brace) && brace.IsOpening(candidate);
 
-  public bool IsPair(char candidate, char checking) => _bracesList.Any(b => b.HasThisBrace(checking) && b.IsPair(candidate));
+  public bool IsPair(char candidate, char checking) =>
+    _braceBySymbol.TryGetValue(checking, out Brace brace) && brace.IsPair(candidate);
 
-  public bool IsPaired(char candidate) => _bracesList.Single(v => v.HasThisBrace(candidate)).IsPaired;
+  public bool IsPaired(char candidate) =>
+    _braceBySymbol.TryGetValue(candidate, out Brace brace) && brace.IsPaired;
 
+  private void NormalizeAndValidateBraces()
+  {
+    _bracesList = _bracesList.Distinct().ToList();
+    ValidateNoConflictingBraces();
+  }
 
   private char[] BuildBracesArray()
   {
     var symbols = new List<char>(_bracesList.Count * 2);
+    var seen = new HashSet<char>();
 
     foreach (Brace brace in _bracesList)
       foreach (char symbol in brace)
-        if (!symbols.Contains(symbol))
+        if (seen.Add(symbol))
           symbols.Add(symbol);
 
     return [.. symbols];
   }
 
+  private Dictionary<char, Brace> BuildBraceLookup()
+  {
+    var lookup = new Dictionary<char, Brace>(BracesList.Length);
+
+    foreach (Brace brace in _bracesList)
+      foreach (char symbol in brace)
+        lookup.TryAdd(symbol, brace);
+
+    return lookup;
+  }
+
   // Гарантирует, что один и тот же символ не принадлежит двум разным парам.
-  // Без этой проверки IsPaired (.Single) бросил бы InvalidOperationException
+  // Без этой проверки один и тот же символ мог бы получить неоднозначную роль
   // уже во время проверки баланса, в обход контракта Result.
   private void ValidateNoConflictingBraces()
   {
